@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/klog/v2"
@@ -35,6 +36,7 @@ import (
 const (
 	rJobReplicasErrorMsg       = "always must be 1"
 	rJobContainerNamesErrorMsg = "must contain the required container for the ancestor: %s"
+	rJobContainerClaimErrorMsg = "references resourceClaim %q which is not defined in the Pod's resourceClaims"
 )
 
 var (
@@ -80,6 +82,28 @@ func validateReplicatedJobs(rJobs []jobsetv1alpha2.ReplicatedJob) field.ErrorLis
 		Child("replicatedJobs")
 	var allErrs field.ErrorList
 	for idx, rJob := range rJobs {
+		// Every container resources.claims entry must reference a Pod-level resourceClaims entry.
+		// Otherwise every TrainJob would have to add the Pod-level claim itself to use the runtime.
+		podSpec := &rJob.Template.Spec.Template.Spec
+		podSpecPath := rJobsPath.Index(idx).Child("template", "spec", "template", "spec")
+		podClaims := sets.New[string]()
+		for _, pc := range podSpec.ResourceClaims {
+			podClaims.Insert(pc.Name)
+		}
+		validateClaims := func(containersField string, containers []corev1.Container) {
+			for k, c := range containers {
+				for m, claim := range c.Resources.Claims {
+					if !podClaims.Has(claim.Name) {
+						allErrs = append(allErrs, field.Invalid(
+							podSpecPath.Child(containersField).Index(k).Child("resources", "claims").Index(m),
+							claim.Name, fmt.Sprintf(rJobContainerClaimErrorMsg, claim.Name)))
+					}
+				}
+			}
+		}
+		validateClaims("initContainers", podSpec.InitContainers)
+		validateClaims("containers", podSpec.Containers)
+
 		if rJob.Template.Labels == nil {
 			continue
 		}
@@ -114,7 +138,9 @@ func validateReplicatedJobs(rJobs []jobsetv1alpha2.ReplicatedJob) field.ErrorLis
 }
 
 func (w *TrainingRuntimeValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *trainer.TrainingRuntime) (admission.Warnings, error) {
-	return nil, nil
+	log := ctrl.LoggerFrom(ctx).WithName("trainingruntime-webhook")
+	log.V(5).Info("Validating update", "trainingRuntime", klog.KObj(newObj))
+	return nil, validateReplicatedJobs(newObj.Spec.Template.Spec.ReplicatedJobs).ToAggregate()
 }
 
 func (w *TrainingRuntimeValidator) ValidateDelete(ctx context.Context, obj *trainer.TrainingRuntime) (admission.Warnings, error) {

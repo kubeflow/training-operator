@@ -82,6 +82,15 @@ const (
 	// {"type": "Suspended", "status": "True", "reason": "Resumed"} condition.
 	TrainJobResumedMessage = "TrainJob is resumed"
 
+	// OptimizationJobComplete is the status condition type indicating all trials finished successfully.
+	OptimizationJobComplete string = "Complete"
+
+	// OptimizationJobFailed is the status condition type indicating the optimization job failed.
+	OptimizationJobFailed string = "Failed"
+
+	// OptimizationJobCreated is the status condition type indicating the Algorithm service is running.
+	OptimizationJobCreated string = "Created"
+
 	// TrainJobDeadlineExceededMessage is the status condition message for the
 	// {"type": "Failed", "reason": "DeadlineExceeded"} condition
 	// when the TrainJob exceeds its ActiveDeadlineSeconds.
@@ -134,6 +143,11 @@ const (
 
 	// MPISSHAuthVolumeName is the volume name for Secret with MPI SSH keys.
 	MPISSHAuthVolumeName string = "mpi-ssh-auth"
+
+	// MPISSHAuthDefaultMountPath is the fallback directory where the MPI SSH keys are mounted
+	// when the MPI policy leaves sshAuthMountPath unset. It must match the kubebuilder default
+	// on MPIMLPolicySource.SSHAuthMountPath.
+	MPISSHAuthDefaultMountPath string = "/root/.ssh"
 
 	// MPISSHPrivateKeyFile is the file name for the private key.
 	MPISSHPrivateKeyFile string = "id_rsa"
@@ -208,6 +222,23 @@ const (
 	// MPICHEnvDefaultValueLauncherExtraArgs is the default SSH connection arguments for MPICH.
 	MPICHEnvDefaultValueLauncherExtraArgs string = "-o ConnectionAttempts=10"
 
+	// Values for the PRTE runtime used by Open MPI >= 5.0.
+	// Open MPI 5.0 removed ORTE and replaced it with PRTE, so the OMPI_MCA_orte_*
+	// keys above are silently ignored by those releases. The MPI plugin emits both
+	// families so a single TrainingRuntime works on Open MPI 4 and 5 alike.
+	// Ref: https://docs.open-mpi.org/en/v5.0.0/news/news-v5.0.x.html
+
+	// PRTEEnvHostFileLocation is the PRTE default hostfile env key.
+	PRTEEnvHostFileLocation string = "PRTE_MCA_prte_default_hostfile"
+
+	// PRTEEnvKeySSHArgs is the env key for the PRTE ssh arguments.
+	PRTEEnvKeySSHArgs string = "PRTE_MCA_plm_ssh_args"
+
+	// PRTEEnvKeepFQDNHostNames is the env key for PRTE if FQDN should be kept.
+	PRTEEnvKeepFQDNHostNames string = "PRTE_MCA_prte_keep_fqdn_hostnames"
+
+	// PRTEEnvDefaultSlots is the PRTE default number of slots env key.
+	PRTEEnvDefaultSlots string = "PRTE_MCA_prte_set_default_slots"
 	// Distributed envs for torchrun.
 	// Ref: https://github.com/pytorch/pytorch/blob/3a0d0885171376ed610c8175a19ba40411fc6f3f/torch/distributed/argparse_util.py#L45
 	// TorchEnvNumNodes is the env name for the number of training nodes.
@@ -299,6 +330,27 @@ const (
 
 	// XGBoostEnvNumWorker is the env name for the total number of workers.
 	XGBoostEnvNumWorker string = "DMLC_NUM_WORKER"
+
+	// SearchAlgorithmServicePort is the port for the Optuna GRPC service.
+	SearchAlgorithmServicePort int32 = 6789
+
+	// SearchAlgorithmServiceName is the service name used for the Katib gRPC health check.
+	SearchAlgorithmServiceName string = "manager.v1beta1.Suggestion"
+
+	// EnvVarPrefix is the prefix for the Optuna environment variables.
+	EnvVarPrefix string = "KUBEFLOW_TRAINER_OPT_"
+
+	// DefaultSearchAlgorithmImage is the image for the Optuna search algorithm.
+	DefaultSearchAlgorithmImage string = "ghcr.io/kubeflow/katib/suggestion-optuna:v0.19.0"
+
+	// OptimizationJobNameLabel is the label for the OptimizationJob name.
+	OptimizationJobNameLabel string = "trainer.kubeflow.org/optimization-job"
+
+	// OptimizationJobComponentLabel identifies resources belonging to a specific OptimizationJob component.
+	OptimizationJobComponentLabel string = "trainer.kubeflow.org/optimization-job-component"
+
+	// SearchAlgorithmComponent identifies the search algorithm Deployment and Service resources.
+	SearchAlgorithmComponent string = "search-algorithm"
 )
 
 const (
@@ -336,6 +388,11 @@ var (
 
 	// MPIReservedEnvNames is MPI reserved env names across all implementations that users must not set manually.
 	MPIReservedEnvNames = OpenMPIReservedEnvNames.Union(IntelMPIReservedEnvNames).Union(MPICHReservedEnvNames)
+	// MPIReservedEnvNames is MPI reserved env names that users must not set manually.
+	MPIReservedEnvNames = sets.New(
+		OpenMPIEnvHostFileLocation, OpenMPIEnvKeyRSHArgs, OpenMPIEnvKeepFQDNHostNames, OpenMPIEnvDefaultSlots,
+		PRTEEnvHostFileLocation, PRTEEnvKeySSHArgs, PRTEEnvKeepFQDNHostNames, PRTEEnvDefaultSlots,
+	)
 
 	// ResourceInUseFinalizer is a finalizer for managed resources which is used by other resources.
 	ResourceInUseFinalizer = fmt.Sprintf("%s/resource-in-use", trainer.GroupVersion.Group)

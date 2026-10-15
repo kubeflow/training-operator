@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/constants"
@@ -155,7 +156,7 @@ var _ = ginkgo.Describe("TrainJob Webhook", ginkgo.Ordered, func() {
 						Obj()
 				},
 				gomega.Succeed()),
-			ginkgo.Entry("Should succeed in creating trainJob with namespace scoped trainingRuntime",
+			ginkgo.Entry("Should succeed in creating trainJob with cluster scoped ClusterTrainingRuntime",
 				func() *trainer.TrainJob {
 					return testingutil.MakeTrainJobWrapper(ns.Name, jobName).
 						RuntimeRef(trainer.GroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), runtimeName).
@@ -164,16 +165,18 @@ var _ = ginkgo.Describe("TrainJob Webhook", ginkgo.Ordered, func() {
 				gomega.Succeed()),
 			ginkgo.Entry("Should fail in creating trainJob with pre-trained model config when referencing a trainingRuntime without an initializer",
 				func() *trainer.TrainJob {
-					newContainers := []corev1.Container{}
-					// TODO (andreyvelich): Refactor this test to check ancestor label.
-					job := &trainingRuntime.Spec.Template.Spec.ReplicatedJobs[1]
-					for _, container := range job.Template.Spec.Template.Spec.Containers {
-						if container.Name != constants.ModelInitializer {
-							newContainers = append(newContainers, container)
+					// remove model initializer from runtime
+					var replicatedJobs []jobsetv1alpha2.ReplicatedJob
+					for _, rj := range trainingRuntime.Spec.Template.Spec.ReplicatedJobs {
+						labels := rj.Template.Labels
+						if v := labels[constants.LabelTrainJobAncestor]; v != constants.ModelInitializer {
+							replicatedJobs = append(replicatedJobs, rj)
 						}
 					}
-					job.Template.Spec.Template.Spec.Containers = newContainers
+					gomega.Expect(replicatedJobs).To(gomega.HaveLen(len(trainingRuntime.Spec.Template.Spec.ReplicatedJobs) - 1))
+					trainingRuntime.Spec.Template.Spec.ReplicatedJobs = replicatedJobs
 					gomega.Expect(k8sClient.Update(ctx, trainingRuntime)).To(gomega.Succeed())
+
 					return testingutil.MakeTrainJobWrapper(ns.Name, jobName).
 						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Initializer(
@@ -190,15 +193,18 @@ var _ = ginkgo.Describe("TrainJob Webhook", ginkgo.Ordered, func() {
 				testingutil.BeForbiddenError()),
 			ginkgo.Entry("Should fail in creating trainJob with dataset initializer when referencing a trainingRuntime without an initializer",
 				func() *trainer.TrainJob {
-					newContainers := []corev1.Container{}
-					job := &trainingRuntime.Spec.Template.Spec.ReplicatedJobs[0]
-					for _, container := range job.Template.Spec.Template.Spec.Containers {
-						if container.Name != constants.DatasetInitializer {
-							newContainers = append(newContainers, container)
+					// remove dataset initializer from runtime
+					var replicatedJobs []jobsetv1alpha2.ReplicatedJob
+					for _, rj := range trainingRuntime.Spec.Template.Spec.ReplicatedJobs {
+						labels := rj.Template.Labels
+						if v := labels[constants.LabelTrainJobAncestor]; v != constants.DatasetInitializer {
+							replicatedJobs = append(replicatedJobs, rj)
 						}
 					}
-					job.Template.Spec.Template.Spec.Containers = newContainers
+					gomega.Expect(replicatedJobs).To(gomega.HaveLen(len(trainingRuntime.Spec.Template.Spec.ReplicatedJobs) - 1))
+					trainingRuntime.Spec.Template.Spec.ReplicatedJobs = replicatedJobs
 					gomega.Expect(k8sClient.Update(ctx, trainingRuntime)).To(gomega.Succeed())
+
 					return testingutil.MakeTrainJobWrapper(ns.Name, jobName).
 						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
 						Initializer(
@@ -728,6 +734,101 @@ var _ = ginkgo.Describe("TrainJob marker validations and defaulting", ginkgo.Ord
 														Template: &trainer.PodTemplatePatch{
 															Spec: &trainer.PodSpecPatch{
 																TerminationGracePeriodSeconds: ptr.To(int64(0)),
+															},
+														},
+													},
+												},
+											}},
+										},
+									},
+								},
+							},
+						}).
+						Obj()
+				},
+				gomega.Succeed()),
+			ginkgo.Entry("Should fail to create TrainJob with claims in resourcesPerNode",
+				func() *trainer.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "claims-in-resources-per-node").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						Trainer(&trainer.Trainer{
+							ResourcesPerNode: &corev1.ResourceRequirements{Claims: []corev1.ResourceClaim{{Name: "gpu"}}},
+						}).
+						Obj()
+				},
+				testingutil.BeInvalidError()),
+			ginkgo.Entry("Rejects creating a TrainJob with a runtimePatches container resources.claim that does not exist in the pod resourceClaims",
+				func() *trainer.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "dangling-container-claim").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						RuntimePatches([]trainer.RuntimePatch{
+							{
+								Manager: "acme.io/manager",
+								TrainingRuntimeSpec: &trainer.TrainingRuntimeSpecPatch{
+									Template: &trainer.JobSetTemplatePatch{
+										Spec: &trainer.JobSetSpecPatch{
+											ReplicatedJobs: []trainer.ReplicatedJobPatch{{
+												Name: constants.Node,
+												Template: &trainer.JobTemplatePatch{
+													Spec: &trainer.JobSpecPatch{
+														Template: &trainer.PodTemplatePatch{
+															Spec: &trainer.PodSpecPatch{
+																Containers: []trainer.ContainerPatch{{
+																	Name: constants.Node,
+																	Resources: &corev1.ResourceRequirements{
+																		Claims: []corev1.ResourceClaim{{Name: "dangling"}},
+																	},
+																}},
+															},
+														},
+													},
+												},
+											}},
+										},
+									},
+								},
+							},
+						}).
+						Obj()
+				},
+				gomega.MatchError(gomega.ContainSubstring("references resourceClaim \"dangling\" which is not defined in the Pod's resourceClaims"))),
+			ginkgo.Entry("Should succeed to create TrainJob with resourceClaimsPerNode",
+				func() *trainer.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "resource-claims-per-node").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						Trainer(
+							testingutil.MakeTrainJobTrainerWrapper().
+								ResourceClaimsPerNode(trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: "gpu-template"}).
+								Obj()).
+						Obj()
+				},
+				gomega.Succeed()),
+			ginkgo.Entry("Should succeed to create TrainJob with a runtimePatches resourceClaim consumed by a container",
+				func() *trainer.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, "runtime-patches-resource-claim").
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "testing").
+						RuntimePatches([]trainer.RuntimePatch{
+							{
+								Manager: "acme.io/manager",
+								TrainingRuntimeSpec: &trainer.TrainingRuntimeSpecPatch{
+									Template: &trainer.JobSetTemplatePatch{
+										Spec: &trainer.JobSetSpecPatch{
+											ReplicatedJobs: []trainer.ReplicatedJobPatch{{
+												Name: constants.Node,
+												Template: &trainer.JobTemplatePatch{
+													Spec: &trainer.JobSpecPatch{
+														Template: &trainer.PodTemplatePatch{
+															Spec: &trainer.PodSpecPatch{
+																ResourceClaims: []corev1.PodResourceClaim{{
+																	Name:                      "gpu",
+																	ResourceClaimTemplateName: ptr.To("gpu-template"),
+																}},
+																Containers: []trainer.ContainerPatch{{
+																	Name: constants.Node,
+																	Resources: &corev1.ResourceRequirements{
+																		Claims: []corev1.ResourceClaim{{Name: "gpu"}},
+																	},
+																}},
 															},
 														},
 													},

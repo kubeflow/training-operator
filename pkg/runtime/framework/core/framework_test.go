@@ -19,6 +19,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -186,6 +187,43 @@ func TestNew(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewPluginOrderIsDeterministic(t *testing.T) {
+	// Verify the implementation detail that plugins are executed in name order.
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	clientBuilder := testingutil.NewClientBuilder()
+	registry := fwkplugins.NewRegistry()
+
+	fwk, err := New(ctx, clientBuilder.Build(), registry, testingutil.AsIndex(clientBuilder), nil)
+	if err != nil {
+		t.Fatalf("Failed to create framework: %v", err)
+	}
+
+	assertSorted := func(phase string, names []string) {
+		if !slices.IsSorted(names) {
+			t.Errorf("%s plugins are not in canonical name-sorted order: %v", phase, names)
+		}
+	}
+
+	mlNames := make([]string, len(fwk.enforceMLPlugins))
+	for i, p := range fwk.enforceMLPlugins {
+		mlNames[i] = p.(framework.Plugin).Name()
+	}
+	assertSorted("enforceMLPlugins", mlNames)
+
+	buildNames := make([]string, len(fwk.componentBuilderPlugins))
+	for i, p := range fwk.componentBuilderPlugins {
+		buildNames[i] = p.(framework.Plugin).Name()
+	}
+	assertSorted("componentBuilderPlugins", buildNames)
+
+	validationNames := make([]string, len(fwk.customValidationPlugins))
+	for i, p := range fwk.customValidationPlugins {
+		validationNames[i] = p.(framework.Plugin).Name()
+	}
+	assertSorted("customValidationPlugins", validationNames)
 }
 
 func TestRunEnforceMLPolicyPlugins(t *testing.T) {
@@ -895,6 +933,22 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 														WithEnv(corev1ac.EnvVar().
 															WithName(constants.OpenMPIEnvKeyRSHArgs).
 															WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
+														).
+														WithEnv(corev1ac.EnvVar().
+															WithName(constants.PRTEEnvHostFileLocation).
+															WithValue(fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)),
+														).
+														WithEnv(corev1ac.EnvVar().
+															WithName(constants.PRTEEnvKeepFQDNHostNames).
+															WithValue("false"),
+														).
+														WithEnv(corev1ac.EnvVar().
+															WithName(constants.PRTEEnvDefaultSlots).
+															WithValue("1"),
+														).
+														WithEnv(corev1ac.EnvVar().
+															WithName(constants.PRTEEnvKeySSHArgs).
+															WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
 														),
 												).
 												WithVolumes(
@@ -1081,6 +1135,18 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 										WithValue("1"),
 									*corev1ac.EnvVar().
 										WithName(constants.OpenMPIEnvKeyRSHArgs).
+										WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvHostFileLocation).
+										WithValue(fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvKeepFQDNHostNames).
+										WithValue("false"),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvDefaultSlots).
+										WithValue("1"),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvKeySSHArgs).
 										WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
 								},
 							}},
@@ -1306,6 +1372,22 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 						},
 						{
 							Name:  constants.OpenMPIEnvKeyRSHArgs,
+							Value: constants.OpenMPIEnvDefaultValueRSHArgs,
+						},
+						{
+							Name:  constants.PRTEEnvHostFileLocation,
+							Value: fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName),
+						},
+						{
+							Name:  constants.PRTEEnvKeepFQDNHostNames,
+							Value: "false",
+						},
+						{
+							Name:  constants.PRTEEnvDefaultSlots,
+							Value: "1",
+						},
+						{
+							Name:  constants.PRTEEnvKeySSHArgs,
 							Value: constants.OpenMPIEnvDefaultValueRSHArgs,
 						}}...,
 					).

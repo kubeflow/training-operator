@@ -127,7 +127,7 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumProcPerNode != nil {
 		info.RuntimePolicy.MLPolicySource.MPI.NumProcPerNode = trainJob.Spec.Trainer.NumProcPerNode
 		// If numProcPerNode is set to 1 in runtime, we make it equal to number of GPUs.
-	} else if *info.RuntimePolicy.MLPolicySource.MPI.NumProcPerNode == 1 {
+	} else if ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.NumProcPerNode, 1) == 1 {
 		resourcesPerNode := ptr.Deref(runtime.ExtractResourcePerNodeFromRuntime(info), corev1.ResourceRequirements{})
 		if jobTrainer := trainJob.Spec.Trainer; jobTrainer != nil && jobTrainer.ResourcesPerNode != nil {
 			resourcesPerNode = ptr.Deref(jobTrainer.ResourcesPerNode, corev1.ResourceRequirements{})
@@ -194,7 +194,7 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 				[]corev1ac.VolumeMountApplyConfiguration{
 					*corev1ac.VolumeMount().
 						WithName(constants.MPISSHAuthVolumeName).
-						WithMountPath(*info.RuntimePolicy.MLPolicySource.MPI.SSHAuthMountPath),
+						WithMountPath(ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.SSHAuthMountPath, constants.MPISSHAuthDefaultMountPath)),
 				}...,
 			)
 			if ps.Name == constants.Launcher && (container.Name == constants.Node || container.Name == constants.Launcher) {
@@ -204,7 +204,7 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 						WithName(constants.MPIHostfileVolumeName).
 						WithMountPath(constants.MPIHostfileDir),
 				)
-				switch *info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation {
+				switch ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation, trainer.MPIImplementationOpenMPI) {
 				case trainer.MPIImplementationOpenMPI:
 					apply.UpsertEnvVars(
 						&info.TemplateSpec.PodSets[psIdx].Containers[cIdx].Env,
@@ -216,9 +216,33 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 							WithValue("true"),
 						*corev1ac.EnvVar().
 							WithName(constants.OpenMPIEnvDefaultSlots).
-							WithValue(strconv.Itoa(int(*info.RuntimePolicy.MLPolicySource.MPI.NumProcPerNode))),
+							WithValue(strconv.Itoa(int(ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.NumProcPerNode, 1)))),
 						*corev1ac.EnvVar().
 							WithName(constants.OpenMPIEnvKeyRSHArgs).
+							WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
+						// Open MPI >= 5.0 replaced ORTE with PRTE and ignores the OMPI_MCA_orte_*
+						// keys above without warning, which silently collapses a multi-node job
+						// onto the launcher. Emit the PRTE equivalents as well so the same
+						// TrainingRuntime works on both Open MPI 4 and 5.
+						//
+						// Unlike ORTE, PRTE does not gracefully match a hostfile entry against
+						// the local node when "keep FQDN hostnames" is enabled: the hostfile
+						// records JobSet's short-form Pod DNS name (<pod>.<service>), which
+						// never equals what PRTE resolves for itself, so with runLauncherAsNode
+						// PRTE decides the launcher's own entry is a remote host and tries (and
+						// fails) to SSH to itself. Leave it disabled for PRTE so local rank
+						// launch stays local. Reproduced and verified on Open MPI 5.0.7.
+						*corev1ac.EnvVar().
+							WithName(constants.PRTEEnvHostFileLocation).
+							WithValue(fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)),
+						*corev1ac.EnvVar().
+							WithName(constants.PRTEEnvKeepFQDNHostNames).
+							WithValue("false"),
+						*corev1ac.EnvVar().
+							WithName(constants.PRTEEnvDefaultSlots).
+							WithValue(strconv.Itoa(int(*info.RuntimePolicy.MLPolicySource.MPI.NumProcPerNode))),
+						*corev1ac.EnvVar().
+							WithName(constants.PRTEEnvKeySSHArgs).
 							WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
 					)
 				case trainer.MPIImplementationIntel:
@@ -338,7 +362,7 @@ func (m *MPI) buildHostFileConfigMap(info *runtime.Info, trainJob *trainer.Train
 		if !isNode(runLauncherAsNode, ps) {
 			continue
 		}
-		switch *info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation {
+		switch ptr.Deref(info.RuntimePolicy.MLPolicySource.MPI.MPIImplementation, trainer.MPIImplementationOpenMPI) {
 		case trainer.MPIImplementationOpenMPI:
 			for e := range ps.Endpoints {
 				fmt.Fprintf(&hostFile, "%s slots=%d\n", e, slots)

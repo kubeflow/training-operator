@@ -36,6 +36,7 @@ import (
 
 	configapi "github.com/kubeflow/trainer/v2/pkg/apis/config/v1alpha1"
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
+	trainerv1alpha1ac "github.com/kubeflow/trainer/v2/pkg/client/applyconfiguration/trainer/v1alpha1"
 	utiltesting "github.com/kubeflow/trainer/v2/pkg/util/testing"
 )
 
@@ -164,6 +165,39 @@ func TestServerErrorResponses(t *testing.T) {
 				Code:    http.StatusUnprocessableEntity,
 			},
 		},
+		"multiple JSON values fail with 422 unprocessable entity": {
+			url:        "/apis/trainer.kubeflow.org/v1alpha1/namespaces/default/trainjobs/test-job/status",
+			body:       `{}{}`,
+			authorized: true,
+			wantResponse: &metav1.Status{
+				Status:  metav1.StatusFailure,
+				Message: "Invalid payload",
+				Reason:  metav1.StatusReasonInvalid,
+				Code:    http.StatusUnprocessableEntity,
+			},
+		},
+		"trailing invalid data fails with 422 unprocessable entity": {
+			url:        "/apis/trainer.kubeflow.org/v1alpha1/namespaces/default/trainjobs/test-job/status",
+			body:       `{} invalid payload`,
+			authorized: true,
+			wantResponse: &metav1.Status{
+				Status:  metav1.StatusFailure,
+				Message: "Invalid payload",
+				Reason:  metav1.StatusReasonInvalid,
+				Code:    http.StatusUnprocessableEntity,
+			},
+		},
+		"trailing closing delimiter fails with 422 unprocessable entity": {
+			url:        "/apis/trainer.kubeflow.org/v1alpha1/namespaces/default/trainjobs/test-job/status",
+			body:       `{}]`,
+			authorized: true,
+			wantResponse: &metav1.Status{
+				Status:  metav1.StatusFailure,
+				Message: "Invalid payload",
+				Reason:  metav1.StatusReasonInvalid,
+				Code:    http.StatusUnprocessableEntity,
+			},
+		},
 		"oversized payload fails with 413 payload too large error": {
 			url: "/apis/trainer.kubeflow.org/v1alpha1/namespaces/default/trainjobs/test-job/status",
 			// Generate ~1MB payload (exceeds 64kB limit)
@@ -238,6 +272,104 @@ func TestServerErrorResponses(t *testing.T) {
 
 			if diff := cmp.Diff(tc.wantResponse, &got); diff != "" {
 				t.Errorf("response mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestToApplyConfig(t *testing.T) {
+	fixedTime := metav1.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
+	cases := map[string]struct {
+		req  trainer.UpdateTrainJobStatusRequest
+		want *trainerv1alpha1ac.TrainJobStatusApplyConfiguration
+	}{
+		"nil TrainerStatus returns empty status apply configuration": {
+			req:  trainer.UpdateTrainJobStatusRequest{},
+			want: trainerv1alpha1ac.TrainJobStatus(),
+		},
+		"populated TrainerStatus maps all fields": {
+			req: trainer.UpdateTrainJobStatusRequest{
+				TrainerStatus: &trainer.TrainerStatus{
+					ProgressPercentage:        ptr.To[int32](75),
+					EstimatedRemainingSeconds: ptr.To[int32](120),
+					LastUpdatedTime:           fixedTime,
+					Metrics: []trainer.Metric{
+						{Name: "loss", Value: "0.25"},
+						{Name: "accuracy", Value: "0.95"},
+					},
+				},
+			},
+			want: trainerv1alpha1ac.TrainJobStatus().
+				WithTrainerStatus(
+					trainerv1alpha1ac.TrainerStatus().
+						WithProgressPercentage(75).
+						WithEstimatedRemainingSeconds(120).
+						WithLastUpdatedTime(fixedTime).
+						WithMetrics(
+							trainerv1alpha1ac.Metric().WithName("loss").WithValue("0.25"),
+							trainerv1alpha1ac.Metric().WithName("accuracy").WithValue("0.95"),
+						),
+				),
+		},
+		"optional fields omitted when ProgressPercentage is nil": {
+			req: trainer.UpdateTrainJobStatusRequest{
+				TrainerStatus: &trainer.TrainerStatus{
+					EstimatedRemainingSeconds: ptr.To[int32](120),
+					LastUpdatedTime:           fixedTime,
+					Metrics: []trainer.Metric{
+						{Name: "loss", Value: "0.25"},
+					},
+				},
+			},
+			want: trainerv1alpha1ac.TrainJobStatus().
+				WithTrainerStatus(
+					trainerv1alpha1ac.TrainerStatus().
+						WithEstimatedRemainingSeconds(120).
+						WithLastUpdatedTime(fixedTime).
+						WithMetrics(
+							trainerv1alpha1ac.Metric().WithName("loss").WithValue("0.25"),
+						),
+				),
+		},
+		"optional fields omitted when EstimatedRemainingSeconds is nil": {
+			req: trainer.UpdateTrainJobStatusRequest{
+				TrainerStatus: &trainer.TrainerStatus{
+					ProgressPercentage: ptr.To[int32](75),
+					LastUpdatedTime:    fixedTime,
+					Metrics: []trainer.Metric{
+						{Name: "loss", Value: "0.25"},
+					},
+				},
+			},
+			want: trainerv1alpha1ac.TrainJobStatus().
+				WithTrainerStatus(
+					trainerv1alpha1ac.TrainerStatus().
+						WithProgressPercentage(75).
+						WithLastUpdatedTime(fixedTime).
+						WithMetrics(
+							trainerv1alpha1ac.Metric().WithName("loss").WithValue("0.25"),
+						),
+				),
+		},
+		"optional fields omitted when ProgressPercentage and EstimatedRemainingSeconds are nil and metrics is empty": {
+			req: trainer.UpdateTrainJobStatusRequest{
+				TrainerStatus: &trainer.TrainerStatus{
+					LastUpdatedTime: fixedTime,
+				},
+			},
+			want: trainerv1alpha1ac.TrainJobStatus().
+				WithTrainerStatus(
+					trainerv1alpha1ac.TrainerStatus().
+						WithLastUpdatedTime(fixedTime),
+				),
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := toApplyConfig(tc.req)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("toApplyConfig() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
