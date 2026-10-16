@@ -136,6 +136,9 @@ func (r *TrainingRuntime) DeleteObjects(ctx context.Context, trainJob *trainer.T
 
 	info, err := r.RuntimeInfo(trainJob, trainingRuntime.Spec.Template, trainingRuntime.Spec.MLPolicy, trainingRuntime.Spec.PodGroupPolicy)
 	if err != nil {
+		// RuntimeInfo only transforms in-memory objects, so its errors (an unsupported
+		// template, an unmergeable runtime patch, a plugin rejecting the runtime) are
+		// deterministic: retrying cannot help, and NewObjects already reports them.
 		ctrl.LoggerFrom(ctx).Error(err, "Unable to build runtime Info for cleanup, skipping")
 		return nil, nil
 	}

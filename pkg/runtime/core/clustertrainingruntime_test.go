@@ -292,6 +292,24 @@ func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
 			).Obj()
 	}
 
+	// runtimeWithBrokenTorch declares a Torch envInjection target that the template does not
+	// have, so the Torch plugin rejects the runtime while its Info is being built.
+	runtimeWithBrokenTorch := func(name string) *trainer.ClusterTrainingRuntime {
+		return testingutil.MakeClusterTrainingRuntimeWrapper(name).
+			RuntimeSpec(
+				testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeClusterTrainingRuntimeWrapper(name).Spec).
+					WithMLPolicy(testingutil.MakeMLPolicyWrapper().
+						WithMLPolicySource(*testingutil.MakeMLPolicySourceWrapper().
+							TorchPolicyWithEnvInjection(&trainer.EnvInjection{
+								Targets: []trainer.EnvInjectionTarget{{JobName: constants.Node, ContainerNames: []string{"missing"}}},
+							}).Obj()).
+						Obj()).
+					PodGroupPolicyVolcano(&trainer.VolcanoPodGroupPolicySource{}).
+					Container(constants.Node, constants.Node, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					Obj(),
+			).Obj()
+	}
+
 	failedTrainJob := func(name, runtimeName string) *trainer.TrainJob {
 		return testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, name).
 			UID("uid").
@@ -349,6 +367,12 @@ func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
 			podGroup:               ownedPodGroup("test-job"),
 			withSnapshot:           true,
 			invalidSnapshot:        true,
+			wantObjs:               nil,
+		},
+		"runtime whose Info cannot be built returns no objects and no error": {
+			clusterTrainingRuntime: runtimeWithBrokenTorch("test-runtime"),
+			trainJob:               failedTrainJob("test-job", "test-runtime"),
+			podGroup:               ownedPodGroup("test-job"),
 			wantObjs:               nil,
 		},
 		"snapshot without the live runtime still returns the PodGroup": {
