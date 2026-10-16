@@ -18,6 +18,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/klog/v2/ktesting"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
@@ -274,6 +276,8 @@ func TestClusterTrainingRuntimeValidateObjects(t *testing.T) {
 }
 
 func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
+	errSnapshotGet := errors.New("failed to read snapshot ConfigMap")
+
 	resRequests := corev1.ResourceList{
 		corev1.ResourceCPU: resource.MustParse("1"),
 	}
@@ -313,8 +317,13 @@ func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
 		podGroup               *volcanov1beta1.PodGroup
 		withSnapshot           bool
 		invalidSnapshot        bool
-		wantObjs               []client.Object
-		wantError              bool
+		// omitLiveRuntime seeds the snapshot but not the live runtime, as when the runtime is
+		// deleted after the TrainJob finishes.
+		omitLiveRuntime bool
+		// snapshotGetErr makes reading the snapshot ConfigMap fail.
+		snapshotGetErr error
+		wantObjs       []client.Object
+		wantErr        error
 	}{
 		"resolves from an existing snapshot": {
 			clusterTrainingRuntime: runtimeWithVolcano("test-runtime"),
@@ -342,6 +351,21 @@ func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
 			invalidSnapshot:        true,
 			wantObjs:               nil,
 		},
+		"snapshot without the live runtime still returns the PodGroup": {
+			clusterTrainingRuntime: runtimeWithVolcano("test-runtime"),
+			trainJob:               failedTrainJob("test-job", "test-runtime"),
+			podGroup:               ownedPodGroup("test-job"),
+			withSnapshot:           true,
+			omitLiveRuntime:        true,
+			wantObjs:               []client.Object{ownedPodGroup("test-job")},
+		},
+		"failed read of the snapshot is returned so the reconcile is retried": {
+			clusterTrainingRuntime: runtimeWithVolcano("test-runtime"),
+			trainJob:               failedTrainJob("test-job", "test-runtime"),
+			podGroup:               ownedPodGroup("test-job"),
+			snapshotGetErr:         errSnapshotGet,
+			wantErr:                errSnapshotGet,
+		},
 	}
 
 	for name, tc := range cases {
@@ -351,11 +375,21 @@ func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
 			t.Cleanup(cancel)
 
 			clientBuilder := testingutil.NewClientBuilder()
-			if tc.clusterTrainingRuntime != nil {
+			if tc.clusterTrainingRuntime != nil && !tc.omitLiveRuntime {
 				clientBuilder.WithObjects(tc.clusterTrainingRuntime)
 			}
 			if tc.podGroup != nil {
 				clientBuilder.WithObjects(tc.podGroup)
+			}
+			if tc.snapshotGetErr != nil {
+				clientBuilder.WithInterceptorFuncs(interceptor.Funcs{
+					Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+						if _, ok := obj.(*corev1.ConfigMap); ok {
+							return tc.snapshotGetErr
+						}
+						return c.Get(ctx, key, obj, opts...)
+					},
+				})
 			}
 			c := clientBuilder.Build()
 
@@ -390,15 +424,15 @@ func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
 			}
 
 			gotObjs, err := clTrainingRuntime.DeleteObjects(ctx, tc.trainJob)
-			if tc.wantError != (err != nil) {
-				t.Errorf("Unexpected error presence: got %v, wantError %v", err, tc.wantError)
+			if diff := cmp.Diff(tc.wantErr, err, cmpopts.EquateErrors()); len(diff) != 0 {
+				t.Errorf("Unexpected error (-want,+got):\n%s", diff)
 			}
 			if diff := cmp.Diff(tc.wantObjs, gotObjs, cmpopts.IgnoreFields(metav1.ObjectMeta{}, "ResourceVersion")); len(diff) != 0 {
 				t.Errorf("Unexpected objects (-want,+got):\n%s", diff)
 			}
 
 			// Unlike NewObjects, DeleteObjects must never create a runtime snapshot.
-			if !tc.withSnapshot {
+			if !tc.withSnapshot && tc.snapshotGetErr == nil {
 				err := c.Get(ctx, client.ObjectKey{
 					Name:      tc.trainJob.Name + runtimeSnapshotSuffix,
 					Namespace: tc.trainJob.Namespace,

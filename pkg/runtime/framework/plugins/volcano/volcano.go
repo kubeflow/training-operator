@@ -238,9 +238,7 @@ func shouldDeletePodGroup(trainJob *trainer.TrainJob) bool {
 }
 
 // ReconcilerBuilders registers a watch on PodGroup so the TrainJob is requeued whenever
-// its owned PodGroup changes. The RuntimeClass/LimitRange watches that used to refresh a
-// suspended TrainJob's PodGroup are gone: Build() no longer updates the PodGroup while
-// suspended (see the comment there), so there is nothing left for them to refresh.
+// its owned PodGroup changes.
 func (v *Volcano) ReconcilerBuilders() []runtime.ReconcilerBuilder {
 	if _, err := v.restMapper.RESTMapping(
 		schema.GroupKind{Group: volcanov1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},

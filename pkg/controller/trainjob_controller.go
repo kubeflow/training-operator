@@ -189,9 +189,8 @@ func (r *TrainJobReconciler) reconcileDeadline(ctx context.Context, trainJob *tr
 			"startTime", startTime,
 			"deadline", deadline)
 		setFailedCondition(trainJob, constants.TrainJobDeadlineExceededMessage, trainer.TrainJobDeadlineExceededReason)
-		// TODO(#3833): this direct deletion predates ComponentDeleterPlugin and does not
-		// retry on transient errors; consider migrating it to a JobSet Delete()
-		// implementation once that pattern is established.
+		// TODO(#3833): migrate this deletion to a JobSet ComponentDeleterPlugin so it is
+		// retried on transient errors.
 		jobSet := &jobsetv1alpha2.JobSet{
 			ObjectMeta: metav1.ObjectMeta{Name: trainJob.Name, Namespace: trainJob.Namespace},
 		}

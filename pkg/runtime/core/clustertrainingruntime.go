@@ -61,10 +61,10 @@ func (r *ClusterTrainingRuntime) NewObjects(ctx context.Context, trainJob *train
 	var clTrainingRuntime trainer.ClusterTrainingRuntime
 	fromSnapshot, err := r.getClusterTrainingRuntime(ctx, trainJob, &clTrainingRuntime)
 	if err != nil {
-		if errors.Is(err, errorInvalidRuntimeSnapshot) {
-			return nil, err
+		if apierrors.IsNotFound(err) {
+			return nil, fmt.Errorf("%w: %w", errorNotFoundSpecifiedClusterTrainingRuntime, err)
 		}
-		return nil, fmt.Errorf("%w: %w", errorNotFoundSpecifiedClusterTrainingRuntime, err)
+		return nil, err
 	}
 	if !fromSnapshot {
 		// Create snapshot for future reconciliations.
@@ -86,12 +86,16 @@ func (r *ClusterTrainingRuntime) NewObjects(ctx context.Context, trainJob *train
 func (r *ClusterTrainingRuntime) DeleteObjects(ctx context.Context, trainJob *trainer.TrainJob) ([]client.Object, error) {
 	var clTrainingRuntime trainer.ClusterTrainingRuntime
 	if _, err := r.getClusterTrainingRuntime(ctx, trainJob, &clTrainingRuntime); err != nil {
-		if apierrors.IsNotFound(err) {
+		switch {
+		case apierrors.IsNotFound(err):
 			ctrl.LoggerFrom(ctx).V(2).Info("ClusterTrainingRuntime no longer exists, skipping cleanup of its plugins' objects", "clusterTrainingRuntime", trainJob.Spec.RuntimeRef.Name)
 			return nil, nil
+		case errors.Is(err, errorInvalidRuntimeSnapshot):
+			ctrl.LoggerFrom(ctx).Error(err, "Runtime snapshot is invalid, skipping cleanup of its plugins' objects")
+			return nil, nil
+		default:
+			return nil, err
 		}
-		ctrl.LoggerFrom(ctx).Error(err, "Unable to resolve ClusterTrainingRuntime for cleanup, skipping")
-		return nil, nil
 	}
 
 	info, err := r.RuntimeInfo(trainJob, clTrainingRuntime.Spec.Template, clTrainingRuntime.Spec.MLPolicy, clTrainingRuntime.Spec.PodGroupPolicy)
@@ -107,11 +111,12 @@ func (r *ClusterTrainingRuntime) DeleteObjects(ctx context.Context, trainJob *tr
 // returned bool reports whether clTrainingRuntime was populated from the snapshot, so callers
 // that only need to create a snapshot on a cache miss do not have to look it up a second time.
 // Returns a NotFound error when neither the snapshot nor the live ClusterTrainingRuntime exist,
-// or an error wrapping errorInvalidRuntimeSnapshot when a snapshot exists but cannot be used.
+// and an error wrapping errorInvalidRuntimeSnapshot when a snapshot exists but cannot be used.
+// Other errors are returned unchanged.
 func (r *ClusterTrainingRuntime) getClusterTrainingRuntime(ctx context.Context, trainJob *trainer.TrainJob, clTrainingRuntime *trainer.ClusterTrainingRuntime) (bool, error) {
 	if err := getRuntimeSnapshot(ctx, r.client, trainJob, clTrainingRuntime); err != nil {
 		if !apierrors.IsNotFound(err) {
-			return false, fmt.Errorf("%w: %w", errorInvalidRuntimeSnapshot, err)
+			return false, err
 		}
 		return false, r.client.Get(ctx, client.ObjectKey{Name: trainJob.Spec.RuntimeRef.Name}, clTrainingRuntime)
 	}
