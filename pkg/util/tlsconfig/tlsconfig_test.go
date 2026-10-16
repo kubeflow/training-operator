@@ -18,10 +18,12 @@ package tlsconfig
 
 import (
 	"crypto/tls"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	configapi "github.com/kubeflow/trainer/v2/pkg/apis/config/v1alpha1"
 )
@@ -32,6 +34,7 @@ func TestApply(t *testing.T) {
 		wantNextProtos   []string
 		wantMinVersion   uint16
 		wantCipherSuites []uint16
+		wantCurvePrefs   []tls.CurveID
 	}{
 		"nil options disable HTTP/2": {
 			opts:           nil,
@@ -89,10 +92,17 @@ func TestApply(t *testing.T) {
 		},
 		"insecure cipher suites are accepted with a warning": {
 			opts: &configapi.TLSOptions{
+				CipherSuites: []string{"TLS_RSA_WITH_3DES_EDE_CBC_SHA"},
+			},
+			wantNextProtos:   []string{"http/1.1"},
+			wantCipherSuites: []uint16{tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA},
+		},
+		"RC4 suites are prohibited and dropped": {
+			opts: &configapi.TLSOptions{
 				CipherSuites: []string{"TLS_RSA_WITH_RC4_128_SHA"},
 			},
 			wantNextProtos:   []string{"http/1.1"},
-			wantCipherSuites: []uint16{tls.TLS_RSA_WITH_RC4_128_SHA},
+			wantCipherSuites: nil,
 		},
 		"unrecognized cipher suites are dropped": {
 			opts: &configapi.TLSOptions{
@@ -111,15 +121,38 @@ func TestApply(t *testing.T) {
 			wantNextProtos:   []string{"http/1.1"},
 			wantCipherSuites: nil,
 		},
+		"curve preferences are resolved to their IDs in order": {
+			opts: &configapi.TLSOptions{
+				CurvePreferences: []string{"X25519", "CurveP256"},
+			},
+			wantNextProtos: []string{"http/1.1"},
+			wantCurvePrefs: []tls.CurveID{tls.X25519, tls.CurveP256},
+		},
+		"unrecognized curve preferences are dropped": {
+			opts: &configapi.TLSOptions{
+				CurvePreferences: []string{"NOT_A_REAL_CURVE", "CurveP384"},
+			},
+			wantNextProtos: []string{"http/1.1"},
+			wantCurvePrefs: []tls.CurveID{tls.CurveP384},
+		},
+		"all-unrecognized curve preferences leave the Go defaults in place": {
+			opts: &configapi.TLSOptions{
+				CurvePreferences: []string{"NOT_A_REAL_CURVE"},
+			},
+			wantNextProtos: []string{"http/1.1"},
+			wantCurvePrefs: nil,
+		},
 		"all options are applied together": {
 			opts: &configapi.TLSOptions{
-				MinVersion:   configapi.TLSVersion12,
-				CipherSuites: []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
-				NextProtos:   []string{"h2", "http/1.1"},
+				MinVersion:       configapi.TLSVersion12,
+				CipherSuites:     []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+				CurvePreferences: []string{"X25519"},
+				NextProtos:       []string{"h2", "http/1.1"},
 			},
 			wantNextProtos:   []string{"h2", "http/1.1"},
 			wantMinVersion:   tls.VersionTLS12,
 			wantCipherSuites: []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
+			wantCurvePrefs:   []tls.CurveID{tls.X25519},
 		},
 	}
 
@@ -136,6 +169,9 @@ func TestApply(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.wantCipherSuites, got.CipherSuites, cmpopts.EquateEmpty()); len(diff) != 0 {
 				t.Errorf("Unexpected CipherSuites (-want,+got):\n%s", diff)
+			}
+			if diff := cmp.Diff(tc.wantCurvePrefs, got.CurvePreferences, cmpopts.EquateEmpty()); len(diff) != 0 {
+				t.Errorf("Unexpected CurvePreferences (-want,+got):\n%s", diff)
 			}
 		})
 	}
@@ -197,8 +233,12 @@ func TestParseCipherSuiteIDs(t *testing.T) {
 			want:  []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
 		},
 		"insecure suites are still resolved": {
-			names: []string{"TLS_RSA_WITH_RC4_128_SHA"},
-			want:  []uint16{tls.TLS_RSA_WITH_RC4_128_SHA},
+			names: []string{"TLS_RSA_WITH_3DES_EDE_CBC_SHA"},
+			want:  []uint16{tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA},
+		},
+		"RC4 suites are prohibited": {
+			names: []string{"TLS_RSA_WITH_RC4_128_SHA", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+			want:  []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
 		},
 		"unrecognized names are skipped": {
 			names: []string{"NOPE", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256", "ALSO_NOPE"},
@@ -223,5 +263,89 @@ func TestParseCipherSuiteIDs(t *testing.T) {
 				t.Errorf("Unexpected cipher suite IDs (-want,+got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	testcases := map[string]struct {
+		opts    *configapi.TLSOptions
+		wantErr bool
+	}{
+		"nil options are valid": {
+			opts:    nil,
+			wantErr: false,
+		},
+		"empty options are valid": {
+			opts:    &configapi.TLSOptions{},
+			wantErr: false,
+		},
+		"recognized values are valid": {
+			opts: &configapi.TLSOptions{
+				MinVersion:       configapi.TLSVersion12,
+				CipherSuites:     []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+				CurvePreferences: []string{"X25519", "CurveP256"},
+			},
+			wantErr: false,
+		},
+		"insecure cipher suites are recognized": {
+			opts: &configapi.TLSOptions{
+				CipherSuites: []string{"TLS_RSA_WITH_AES_128_CBC_SHA"},
+			},
+			wantErr: false,
+		},
+		"unrecognized minVersion is rejected": {
+			opts: &configapi.TLSOptions{
+				MinVersion: "0.9",
+			},
+			wantErr: true,
+		},
+		"unrecognized cipher suite is rejected": {
+			opts: &configapi.TLSOptions{
+				CipherSuites: []string{"TLS_NOT_A_CIPHER"},
+			},
+			wantErr: true,
+		},
+		"RC4 cipher suites are rejected": {
+			opts: &configapi.TLSOptions{
+				CipherSuites: []string{"TLS_RSA_WITH_RC4_128_SHA"},
+			},
+			wantErr: true,
+		},
+		"unrecognized curve preference is rejected": {
+			opts: &configapi.TLSOptions{
+				CurvePreferences: []string{"X25529"},
+			},
+			wantErr: true,
+		},
+		"one unrecognized value in a list is rejected": {
+			opts: &configapi.TLSOptions{
+				CurvePreferences: []string{"X25519", "NotACurve"},
+			},
+			wantErr: true,
+		},
+	}
+
+	for name, tc := range testcases {
+		t.Run(name, func(t *testing.T) {
+			errs := Validate(tc.opts, field.NewPath("tls"))
+			if tc.wantErr && len(errs) == 0 {
+				t.Errorf("Validate(%+v) = no errors, want errors", tc.opts)
+			}
+			if !tc.wantErr && len(errs) > 0 {
+				t.Errorf("Validate(%+v) = %v, want no errors", tc.opts, errs)
+			}
+		})
+	}
+}
+
+func TestValidateErrorListsValidCurves(t *testing.T) {
+	errs := Validate(&configapi.TLSOptions{
+		CurvePreferences: []string{"NotACurve"},
+	}, field.NewPath("tls"))
+	if len(errs) != 1 {
+		t.Fatalf("Validate() = %v, want exactly one error", errs)
+	}
+	if !strings.Contains(errs[0].Error(), "X25519") || !strings.Contains(errs[0].Error(), "CurveP256") {
+		t.Errorf("Validate() error %q does not list the supported curve names", errs[0].Error())
 	}
 }
