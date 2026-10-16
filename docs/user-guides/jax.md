@@ -143,8 +143,8 @@ The jax-distributed runtime injects environment variables such as
 | `JAX_PROCESS_ID` | Global process index (0-based) |
 | `JAX_COORDINATOR_ADDRESS` | Address of the coordinator (process 0) |
 
-`JAX_NUM_PROCESSES` and `JAX_PROCESS_ID` are not injected when the trainer runs with multiple
-replicas (e.g. [multi-slice TPU](jax-tpu.md#multi-slice-tpu)).
+These environment variables are not injected when the trainer runs with multiple replicas
+(e.g. [multi-slice TPU](jax-tpu.md#multi-slice-tpu)).
 
 ---
 

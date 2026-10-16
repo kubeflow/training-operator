@@ -73,8 +73,8 @@ func (j *Jax) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 
 		// When the trainer runs as multiple replicated Jobs (e.g. multi-slice TPU), the Job completion
 		// index is not unique across replicas, so the process ID can't be derived from it.
-		// In that case, jax.distributed.initialize() auto-detects the number of processes and
-		// the process ID from the TPU environment.
+		// In that case, jax.distributed.initialize() auto-detects the number of processes, the process ID,
+		// and the coordinator address from the TPU environment.
 		if runtime.TrainerReplicas(info) == 1 {
 			apply.UpsertEnvVars(&trainerContainer.Env,
 				// Total number of JAX processes (one per node/host)
@@ -88,20 +88,17 @@ func (j *Jax) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 					WithValueFrom(corev1ac.EnvVarSource().
 						WithFieldRef(corev1ac.ObjectFieldSelector().
 							WithFieldPath(constants.JobCompletionIndexFieldPath))),
+
+				// Coordinator address - first pod in the headless service
+				*corev1ac.EnvVar().
+					WithName("JAX_COORDINATOR_ADDRESS").
+					WithValue(fmt.Sprintf("%s-%s-0-0.%s:%d",
+						trainJob.Name,
+						constants.Node,
+						trainJob.Name,
+						constants.ContainerTrainerPort)),
 			)
 		}
-
-		// Set JAX distributed environment variables
-		apply.UpsertEnvVars(&trainerContainer.Env,
-			// Coordinator address - first pod in the headless service
-			*corev1ac.EnvVar().
-				WithName("JAX_COORDINATOR_ADDRESS").
-				WithValue(fmt.Sprintf("%s-%s-0-0.%s:%d",
-					trainJob.Name,
-					constants.Node,
-					trainJob.Name,
-					constants.ContainerTrainerPort)),
-		)
 
 		// Add container port for the headless service (needed for pod-to-pod communication)
 		apply.UpsertPort(&trainerContainer.Ports, *corev1ac.ContainerPort().WithContainerPort(constants.ContainerTrainerPort))

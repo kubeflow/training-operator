@@ -1194,22 +1194,58 @@ func TestValidate(t *testing.T) {
 			newObj: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").
 				Obj(),
 		},
-		"trainer replicatedJob with multiple replicas is not supported": {
+		"launcher and node replicatedJobs with multiple replicas are not supported": {
 			info: runtime.NewInfo(
 				runtime.WithMLPolicySource(utiltesting.MakeMLPolicyWrapper().
 					WithMLPolicySource(*utiltesting.MakeMLPolicySourceWrapper().
-						MPIPolicy(ptr.To[int32](1), trainer.MPIImplementationOpenMPI, nil, nil).
+						MPIPolicy(ptr.To[int32](1), trainer.MPIImplementationOpenMPI, nil, ptr.To(true)).
 						Obj(),
 					).
 					Obj(),
 				),
 				runtime.WithTemplateSpecObjApply(jobsetv1alpha2ac.JobSetSpec().
-					WithReplicatedJobs(jobsetv1alpha2ac.ReplicatedJob().
-						WithName(constants.Node).
-						WithReplicas(2).
-						WithTemplate(batchv1ac.JobTemplateSpec().
-							WithLabels(map[string]string{constants.LabelTrainJobAncestor: constants.AncestorTrainer}),
-						),
+					WithReplicatedJobs(
+						jobsetv1alpha2ac.ReplicatedJob().
+							WithName(constants.Launcher).
+							WithReplicas(3).
+							WithTemplate(batchv1ac.JobTemplateSpec().
+								WithLabels(map[string]string{constants.LabelTrainJobAncestor: constants.AncestorTrainer}),
+							),
+						jobsetv1alpha2ac.ReplicatedJob().
+							WithName(constants.Node).
+							WithReplicas(2),
+					),
+				),
+			),
+			newObj: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").
+				Obj(),
+			wantError: field.ErrorList{
+				field.Invalid(field.NewPath("spec", "runtimeRef"), int32(3),
+					"launcher replicatedJob replicas must be 1 for the MPI runtime"),
+				field.Invalid(field.NewPath("spec", "runtimeRef"), int32(2),
+					"node replicatedJob replicas must be 1 for the MPI runtime"),
+			},
+		},
+		"node replicatedJob without trainer ancestor label with multiple replicas is not supported": {
+			info: runtime.NewInfo(
+				runtime.WithMLPolicySource(utiltesting.MakeMLPolicyWrapper().
+					WithMLPolicySource(*utiltesting.MakeMLPolicySourceWrapper().
+						MPIPolicy(ptr.To[int32](1), trainer.MPIImplementationOpenMPI, nil, ptr.To(true)).
+						Obj(),
+					).
+					Obj(),
+				),
+				runtime.WithTemplateSpecObjApply(jobsetv1alpha2ac.JobSetSpec().
+					WithReplicatedJobs(
+						jobsetv1alpha2ac.ReplicatedJob().
+							WithName(constants.Node).
+							WithReplicas(2),
+						jobsetv1alpha2ac.ReplicatedJob().
+							WithName(constants.Launcher).
+							WithReplicas(1).
+							WithTemplate(batchv1ac.JobTemplateSpec().
+								WithLabels(map[string]string{constants.LabelTrainJobAncestor: constants.AncestorTrainer}),
+							),
 					),
 				),
 			),
@@ -1217,7 +1253,7 @@ func TestValidate(t *testing.T) {
 				Obj(),
 			wantError: field.ErrorList{
 				field.Invalid(field.NewPath("spec", "runtimeRef"), int32(2),
-					"trainer replicatedJob replicas must be 1 for the MPI runtime"),
+					"node replicatedJob replicas must be 1 for the MPI runtime"),
 			},
 		},
 		"numProcPerNode typed is int": {

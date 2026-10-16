@@ -688,6 +688,71 @@ func TestTrainerReplicas(t *testing.T) {
 	}
 }
 
+func TestReplicatedJobReplicas(t *testing.T) {
+	cases := map[string]struct {
+		info         *Info
+		rJobName     string
+		wantReplicas int32
+	}{
+		"template spec is not JobSet": {
+			info:         &Info{},
+			rJobName:     constants.Node,
+			wantReplicas: 1,
+		},
+		"replicatedJob does not exist": {
+			info: &Info{
+				TemplateSpec: TemplateSpec{
+					ObjApply: jobsetv1alpha2ac.JobSetSpec().
+						WithReplicatedJobs(
+							jobsetv1alpha2ac.ReplicatedJob().
+								WithName(constants.Launcher).
+								WithReplicas(2),
+						),
+				},
+			},
+			rJobName:     constants.Node,
+			wantReplicas: 1,
+		},
+		"replicatedJob without replicas": {
+			info: &Info{
+				TemplateSpec: TemplateSpec{
+					ObjApply: jobsetv1alpha2ac.JobSetSpec().
+						WithReplicatedJobs(
+							jobsetv1alpha2ac.ReplicatedJob().
+								WithName(constants.Node),
+						),
+				},
+			},
+			rJobName:     constants.Node,
+			wantReplicas: 1,
+		},
+		"replicatedJob with multiple replicas": {
+			info: &Info{
+				TemplateSpec: TemplateSpec{
+					ObjApply: jobsetv1alpha2ac.JobSetSpec().
+						WithReplicatedJobs(
+							jobsetv1alpha2ac.ReplicatedJob().
+								WithName(constants.Launcher).
+								WithReplicas(1),
+							jobsetv1alpha2ac.ReplicatedJob().
+								WithName(constants.Node).
+								WithReplicas(3),
+						),
+				},
+			},
+			rJobName:     constants.Node,
+			wantReplicas: 3,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			if got := ReplicatedJobReplicas(tc.info, tc.rJobName); got != tc.wantReplicas {
+				t.Errorf("Unexpected replicatedJob replicas, want: %d, got: %d", tc.wantReplicas, got)
+			}
+		})
+	}
+}
+
 func TestFindContainerByPodSetName(t *testing.T) {
 	cases := map[string]struct {
 		info          *Info

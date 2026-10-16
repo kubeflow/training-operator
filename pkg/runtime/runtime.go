@@ -305,6 +305,19 @@ func TrainerReplicas(info *Info) int32 {
 	return constants.DefaultJobReplicas
 }
 
+// ReplicatedJobReplicas returns the number of replicas for the replicatedJob with the given name from the Info object.
+// It returns 1 if the replicatedJob is not found or replicas are not set.
+func ReplicatedJobReplicas(info *Info, rJobName string) int32 {
+	if jobSetSpec, ok := TemplateSpecApply[jobsetv1alpha2ac.JobSetSpecApplyConfiguration](info); ok {
+		for _, rJob := range jobSetSpec.ReplicatedJobs {
+			if ptr.Deref(rJob.Name, "") == rJobName {
+				return ptr.Deref(rJob.Replicas, constants.DefaultJobReplicas)
+			}
+		}
+	}
+	return constants.DefaultJobReplicas
+}
+
 // GetNumGPUPerNode returns the GPU count if found in container resources.
 func GetNumGPUPerNode(res *corev1.ResourceRequirements) int {
 	if res == nil {

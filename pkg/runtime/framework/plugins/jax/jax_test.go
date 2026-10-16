@@ -154,7 +154,7 @@ func TestJAXEnforceMLPolicy(t *testing.T) {
 				Scheduler: &runtime.Scheduler{PodLabels: make(map[string]string)},
 			},
 		},
-		"multi-slice JAX training does not set JAX_NUM_PROCESSES and JAX_PROCESS_ID": {
+		"multi-slice JAX training does not set JAX distributed envs": {
 			info: runtime.NewInfo(
 				runtime.WithMLPolicySource(
 					utiltesting.MakeMLPolicyWrapper().
@@ -210,12 +210,6 @@ func TestJAXEnforceMLPolicy(t *testing.T) {
 							Ports: []corev1ac.ContainerPortApplyConfiguration{{
 								ContainerPort: ptr.To[int32](constants.ContainerTrainerPort),
 							}},
-							Env: []corev1ac.EnvVarApplyConfiguration{
-								{
-									Name:  ptr.To("JAX_COORDINATOR_ADDRESS"),
-									Value: ptr.To(fmt.Sprintf("test-job-%s-0-0.test-job:%d", constants.Node, constants.ContainerTrainerPort)),
-								},
-							},
 						}},
 					}},
 				},

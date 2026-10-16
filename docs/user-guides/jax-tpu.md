@@ -441,7 +441,8 @@ To train across multiple TPU slices, set `replicas` of the trainer replicated Jo
 
 The `numNodes` parameter is the **total** number of nodes across all slices, and it must be
 divisible by `replicas`. For example, 2 slices with the `2x4` topology (2 hosts per slice) require
-`numNodes: 4` and `replicas: 2`:
+`numNodes: 4` and `replicas: 2`. The `alpha.jobset.sigs.k8s.io/exclusive-topology` annotation
+ensures that all Pods of a single slice are placed in the same TPU node pool:
 
 ```yaml
 apiVersion: trainer.kubeflow.org/v1alpha1
@@ -463,6 +464,8 @@ spec:
             metadata:
               labels:
                 trainer.kubeflow.org/trainjob-ancestor-step: trainer
+              annotations:
+                alpha.jobset.sigs.k8s.io/exclusive-topology: cloud.google.com/gke-nodepool
             spec:
               template:
                 spec:
@@ -470,9 +473,9 @@ spec:
 ```
 
 With multiple replicas, the Job completion index is not unique across slices, so the JAX runtime
-does not inject `JAX_NUM_PROCESSES` and `JAX_PROCESS_ID`. Instead, call `jax.distributed.initialize()`
-without arguments, and JAX detects the number of processes and the process ID from the TPU
-environment:
+does not inject `JAX_NUM_PROCESSES`, `JAX_PROCESS_ID`, and `JAX_COORDINATOR_ADDRESS`. Instead, call
+`jax.distributed.initialize()` without arguments, and JAX detects the number of processes, the
+process ID, and the coordinator address from the TPU environment:
 
 ```python
 import jax
