@@ -464,7 +464,7 @@ async fn partition_tasks(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use arrow::array::ListArray;
+    use arrow::array::{ListArray, StringViewArray};
     use arrow::datatypes::{DataType, Field, Schema};
     use datafusion::prelude::SessionContext;
     use futures::TryStreamExt;
@@ -526,6 +526,46 @@ mod tests {
 
         let result = exec.execute(0, task_ctx);
         assert!(result.is_ok());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_data_file_table_exec_carries_assigned_file_paths()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let schema = create_test_schema();
+        let partitions = Arc::new(vec![TaskGroup {
+            tasks: vec![
+                create_test_file_scan_task_with_record_count(100, "/test/file1.parquet"),
+                create_test_file_scan_task_with_record_count(50, "/test/file2.parquet"),
+            ],
+            start_index: 0,
+            end_index: 149,
+        }]);
+
+        let exec = DataFileTableExec::new(schema.clone(), partitions);
+        let session_ctx = SessionContext::new();
+        let mut stream = exec.execute(0, session_ctx.task_ctx())?;
+
+        let batch = stream
+            .try_next()
+            .await?
+            .ok_or("expected one batch from partition 0")?;
+
+        let file_paths = batch
+            .column_by_name("file_paths")
+            .ok_or("file_paths column not found")?
+            .as_any()
+            .downcast_ref::<ListArray>()
+            .ok_or("file_paths is not a ListArray")?;
+        let paths = file_paths
+            .values()
+            .as_any()
+            .downcast_ref::<StringViewArray>()
+            .ok_or("file_paths values are not a StringViewArray")?;
+
+        assert_eq!(file_paths.value_offsets(), &[0i32, 2]);
+        assert_eq!(paths.value(0), "/test/file1.parquet");
+        assert_eq!(paths.value(1), "/test/file2.parquet");
         Ok(())
     }
 
@@ -720,6 +760,45 @@ mod tests {
         // The empty group keeps a degenerate range one past the end of the data.
         assert!(result[2].tasks.is_empty());
         assert_eq!((result[2].start_index, result[2].end_index), (150, 150));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_partition_tasks_breaks_ties_towards_lowest_group()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use futures::stream;
+
+        // Three equally sized files over two workers. The first two land in
+        // different groups, so the third arrives with both groups already holding
+        // the same number of rows. That is the tie the least-loaded search has to
+        // resolve, and it has to pick group 0.
+        let tasks = vec![
+            create_test_file_scan_task_with_record_count(100, "/test/file1.parquet"),
+            create_test_file_scan_task_with_record_count(100, "/test/file2.parquet"),
+            create_test_file_scan_task_with_record_count(100, "/test/file3.parquet"),
+        ];
+        let stream = stream::iter(tasks.into_iter().map(Ok));
+        let result = partition_tasks(Box::pin(stream), 2).await?;
+
+        let paths = |group: &TaskGroup| -> Vec<String> {
+            group
+                .tasks
+                .iter()
+                .map(|task| task.data_file_path.clone())
+                .collect()
+        };
+
+        assert_eq!(
+            paths(&result[0]),
+            vec![
+                "/test/file1.parquet".to_string(),
+                "/test/file3.parquet".to_string()
+            ],
+            "the tied file goes to the lowest group index"
+        );
+        assert_eq!(paths(&result[1]), vec!["/test/file2.parquet".to_string()]);
+        assert_eq!((result[0].start_index, result[0].end_index), (0, 199));
+        assert_eq!((result[1].start_index, result[1].end_index), (200, 299));
         Ok(())
     }
 
