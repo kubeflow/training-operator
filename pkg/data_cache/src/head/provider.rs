@@ -35,6 +35,7 @@ use iceberg::scan::{FileScanTask, FileScanTaskStream};
 use iceberg::table::{StaticTable, Table};
 use iceberg_storage_opendal::OpenDalResolvingStorageFactory;
 use std::any::Any;
+use std::collections::BinaryHeap;
 use std::fmt::Formatter;
 use std::sync::Arc;
 use tracing::{debug, info};
@@ -427,19 +428,23 @@ async fn partition_tasks(
 
     tasks.sort_by_key(|task| std::cmp::Reverse(task.record_count));
 
+    let mut group_heap: BinaryHeap<std::cmp::Reverse<(usize, usize)>> = (0..num_groups)
+        .map(|index| std::cmp::Reverse((0, index)))
+        .collect();
+
     for task in tasks {
-        let min_group_index = group_sizes
-            .iter()
-            .enumerate()
-            .min_by_key(|&(_, size)| size)
-            .map(|(index, _)| index)
+        let min_group_index = group_heap
+            .pop()
+            .map(|std::cmp::Reverse((_, index))| index)
             .ok_or_else(|| format!("Failed to find minimum group"))?;
 
         let record_count =
             task.record_count
                 .ok_or_else(|| format!("Task record count is None"))? as usize;
 
-        group_sizes[min_group_index] += record_count;
+        let new_size = group_sizes[min_group_index] + record_count;
+        group_sizes[min_group_index] = new_size;
+        group_heap.push(std::cmp::Reverse((new_size, min_group_index)));
         groups[min_group_index].tasks.push(task);
     }
 
