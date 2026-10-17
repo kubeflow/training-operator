@@ -114,7 +114,8 @@ func TestProjectedServiceAccountTokenAuthorizerAuthorize(t *testing.T) {
 	audience := TokenAudience(namespace, trainJobName)
 	validToken := signToken(t, key, testKeyID, oidc.RS256, tokenClaims(issuer, audience, namespace))
 	validTokenParts := strings.Split(validToken, ".")
-	otherTokenParts := strings.Split(signToken(t, key, testKeyID, oidc.RS256, tokenClaims(issuer, TokenAudience(namespace, "other-job"), namespace)), ".")
+	otherJobToken := signToken(t, key, testKeyID, oidc.RS256, tokenClaims(issuer, TokenAudience(namespace, "other-job"), namespace))
+	otherJobTokenParts := strings.Split(otherJobToken, ".")
 
 	missingKubernetesClaims := tokenClaims(issuer, audience, namespace)
 	delete(missingKubernetesClaims, "kubernetes.io")
@@ -125,6 +126,9 @@ func TestProjectedServiceAccountTokenAuthorizerAuthorize(t *testing.T) {
 
 	notYetValidClaims := tokenClaims(issuer, audience, namespace)
 	notYetValidClaims["nbf"] = time.Now().Add(time.Hour).Unix()
+
+	missingExpiryClaims := tokenClaims(issuer, audience, namespace)
+	delete(missingExpiryClaims, "exp")
 
 	testcases := map[string]struct {
 		oidcProvider   *oidc.Provider
@@ -152,7 +156,7 @@ func TestProjectedServiceAccountTokenAuthorizerAuthorize(t *testing.T) {
 		},
 		"token for a different train job is not authorized": {
 			oidcProvider: provider,
-			authHeader:   "Bearer " + signToken(t, key, testKeyID, oidc.RS256, tokenClaims(issuer, TokenAudience(namespace, "other-job"), namespace)),
+			authHeader:   "Bearer " + otherJobToken,
 		},
 		"token for the same train job name in a different namespace is not authorized": {
 			oidcProvider: provider,
@@ -170,6 +174,10 @@ func TestProjectedServiceAccountTokenAuthorizerAuthorize(t *testing.T) {
 			oidcProvider: provider,
 			authHeader:   "Bearer " + signToken(t, key, testKeyID, oidc.RS256, expiredClaims),
 		},
+		"token without an expiry is not authorized": {
+			oidcProvider: provider,
+			authHeader:   "Bearer " + signToken(t, key, testKeyID, oidc.RS256, missingExpiryClaims),
+		},
 		"token that is not yet valid is not authorized": {
 			oidcProvider: provider,
 			authHeader:   "Bearer " + signToken(t, key, testKeyID, oidc.RS256, notYetValidClaims),
@@ -184,7 +192,7 @@ func TestProjectedServiceAccountTokenAuthorizerAuthorize(t *testing.T) {
 		},
 		"token with the signature of another token is not authorized": {
 			oidcProvider: provider,
-			authHeader:   "Bearer " + validTokenParts[0] + "." + validTokenParts[1] + "." + otherTokenParts[2],
+			authHeader:   "Bearer " + validTokenParts[0] + "." + validTokenParts[1] + "." + otherJobTokenParts[2],
 		},
 		"token that is not a JWT is not authorized": {
 			oidcProvider: provider,
@@ -259,6 +267,7 @@ func TestProjectedServiceAccountTokenAuthorizerAuthorizeKeyRotation(t *testing.T
 		{name: "token signed with the published key is authorized, caching the JWKS", authHeader: tokenBeforeRotation, wantAuthorized: true},
 		{name: "token signed with a key not yet published is not authorized", authHeader: tokenAfterRotation},
 		{name: "token signed with the rotated key is authorized once it is published", authHeader: tokenAfterRotation, rotateKeys: true, wantAuthorized: true},
+		{name: "token signed with the original key is still authorized after rotation", authHeader: tokenBeforeRotation, wantAuthorized: true},
 	}
 	for _, step := range steps {
 		if step.rotateKeys {
