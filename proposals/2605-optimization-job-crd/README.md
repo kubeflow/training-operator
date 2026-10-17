@@ -457,6 +457,12 @@ Three properties this KEP already commits to are not expressible through the Kat
 
 **History carries trial state.** `TrialRecord.state` distinguishes `RUNNING`, `SUCCEEDED`, `FAILED` and `EARLY_STOPPED`, so a provider can record a failure as a terminal state rather than leaving a trial in flight.
 
+**No defaults on the wire.** A zero enum value (`*_UNSPECIFIED`) or an unset `oneof` is rejected: `Validate` reports it as an issue and `Suggest` fails with `INVALID_ARGUMENT`. Falling back to a default is how the unset-distribution defect above happens, so the schema does not allow it.
+
+**Exhaustion is explicit.** Grid search can run out of points before `numTrials` is reached. `SuggestResponse.search_space_exhausted` lets the provider say so and return suggestions for only a prefix of `trial_names`. The controller creates no TrainJobs for the remaining names, stops asking, and completes the job once the trials already created finish.
+
+**Seeded randomness is per trial.** A provider that seeds a fresh generator from `RandomAlgorithm.seed` on every call re-proposes earlier points after a restart. Providers should derive each draw from the seed and the trial name, for example `hash(seed, trial_name)`.
+
 **Search space and algorithm are `oneof`s, mirroring the CRD.** An unsupported combination, such as numeric bounds on a categorical parameter, cannot be expressed on the wire. The distribution defect above originates in a flat message where every field is always present. Field numbers 4 and 5 in `SearchSpace` are reserved for the normal and log-normal spaces proposed in #3908, so adding them renumbers nothing.
 
 **Numeric bounds stay decimal strings.** The CRD encodes `min` and `max` as strings with a regex permitting exponent notation, to avoid float parsing differences between the Go controller and a Python provider. The schema carries them verbatim.
@@ -481,7 +487,7 @@ Two mechanical notes for whoever wires up generation:
   `hack/python-api/gen-api.sh` already does this for OpenAPI output.
 - `google.golang.org/grpc` is not currently a direct dependency of the module.
 
-Following Katib, generation would use `buf`. The schema passes `buf lint` with the `DEFAULT` rule set.
+Following Katib, generation would use `buf`, with `pkg/apis` as the module root. The package is `optimizer.v1alpha1` so that it matches its directory relative to that root, which `buf lint` requires under the `DEFAULT` rule set (`PACKAGE_DIRECTORY_MATCH`). `buf lint pkg/apis` passes with buf v1.47.2.
 
 **Open questions**
 

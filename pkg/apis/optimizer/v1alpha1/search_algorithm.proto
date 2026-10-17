@@ -16,7 +16,7 @@ limitations under the License.
 
 syntax = "proto3";
 
-package trainer.optimizer.v1alpha1;
+package optimizer.v1alpha1;
 
 option go_package = "github.com/kubeflow/trainer/v2/pkg/apis/optimizer/v1alpha1;optimizerv1alpha1";
 
@@ -30,6 +30,10 @@ option go_package = "github.com/kubeflow/trainer/v2/pkg/apis/optimizer/v1alpha1;
 // status under KEP-3744); this contract is the same either way.
 // A provider MAY cache a study in memory as an optimization, but dropping that
 // cache MUST NOT change the observable result beyond sampler randomness.
+//
+// There are no defaults. A zero enum value (any *_UNSPECIFIED) or an unset
+// oneof is invalid: Validate MUST report it as an issue, and Suggest MUST fail
+// with INVALID_ARGUMENT rather than fall back to some other value.
 service SearchAlgorithmService {
   // Validate reports whether this provider can serve the given specification.
   // The controller calls it once, before creating any TrainJob, so that an
@@ -87,7 +91,8 @@ message SuggestRequest {
 
   // trial_names are the names of the TrainJobs the controller has allocated
   // and is about to create. The provider MUST return exactly one suggestion
-  // per name, in the same order.
+  // per name, in the same order, unless it sets search_space_exhausted in the
+  // response.
   //
   // Allocating names before asking is what makes the call idempotent: a
   // reconcile that is retried after a crash re-sends the same names, and the
@@ -98,6 +103,13 @@ message SuggestRequest {
 message SuggestResponse {
   // suggestions has one entry per entry in trial_names, in the same order.
   repeated Suggestion suggestions = 1;
+
+  // search_space_exhausted is set when the provider has no new points left,
+  // for example a grid smaller than numTrials. suggestions then covers only a
+  // prefix of trial_names, possibly none. The controller MUST NOT create
+  // TrainJobs for the names left out, and MUST NOT ask for more suggestions;
+  // the job completes once the trials already created finish.
+  bool search_space_exhausted = 2;
 }
 
 message Suggestion {
@@ -212,6 +224,12 @@ message SearchAlgorithm {
 
 message RandomAlgorithm {
   // seed makes sampling reproducible. Absent means the provider chooses.
+  //
+  // A provider MUST NOT seed a fresh generator from seed alone on every call:
+  // a provider rebuilt from history would start over and re-propose earlier
+  // points. It SHOULD derive each trial's draw from seed and the trial name,
+  // e.g. hash(seed, trial_name), so a trial's point does not depend on
+  // restarts or on how much history was sent.
   optional int64 seed = 1;
 }
 
