@@ -287,25 +287,25 @@ fn create_multi_batch_stream(
     Ok(Box::pin(RecordBatchStreamAdapter::new(schema, stream)))
 }
 #[derive(Debug, Default)]
-struct RecordBatchBuilder {
+struct RecordBatchBuilder<'a> {
     worker_ids: Vec<u64>,
-    file_paths: Vec<Vec<String>>,
+    file_paths: Vec<Vec<&'a str>>,
     row_start_indexes: Vec<u64>,
     row_end_indexes: Vec<u64>,
 }
 
-impl RecordBatchBuilder {
+impl<'a> RecordBatchBuilder<'a> {
     fn new() -> Self {
         Self::default()
     }
-    fn add_task(&mut self, index: usize, group: &TaskGroup) -> Result<()> {
+    fn add_task(&mut self, index: usize, group: &'a TaskGroup) -> Result<()> {
         if group.tasks.is_empty() {
             return Ok(());
         }
         let mut _row_count = 0;
         let mut file_paths = Vec::new();
         for task in group.tasks.iter() {
-            file_paths.push(task.data_file_path.clone());
+            file_paths.push(task.data_file_path.as_str());
             _row_count += task.record_count.ok_or_else(|| {
                 DataFusionError::Execution("Task record count is None".to_string())
             })? //check if filescantask doesnt have record_count. IcebergFileScan always includes complete datafile
