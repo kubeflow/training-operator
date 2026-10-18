@@ -734,6 +734,22 @@ func (t *TrainJobWrapper) Conditions(conditions ...metav1.Condition) *TrainJobWr
 	return t
 }
 
+func (t *TrainJobWrapper) Label(key, value string) *TrainJobWrapper {
+	if t.Labels == nil {
+		t.Labels = make(map[string]string)
+	}
+	t.Labels[key] = value
+	return t
+}
+
+func (t *TrainJobWrapper) Annotation(key, value string) *TrainJobWrapper {
+	if t.Annotations == nil {
+		t.Annotations = make(map[string]string)
+	}
+	t.Annotations[key] = value
+	return t
+}
+
 func (t *TrainJobWrapper) Obj() *trainer.TrainJob {
 	return &t.TrainJob
 }
@@ -1310,6 +1326,22 @@ func (s *TrainingRuntimeSpecWrapper) PodGroupPolicyCoschedulingSchedulingTimeout
 		})
 	}
 	s.PodGroupPolicy.Coscheduling.ScheduleTimeoutSeconds = &timeout
+	return s
+}
+
+func (s *TrainingRuntimeSpecWrapper) TemplateLabel(key, value string) *TrainingRuntimeSpecWrapper {
+	if s.Template.Labels == nil {
+		s.Template.Labels = make(map[string]string)
+	}
+	s.Template.Labels[key] = value
+	return s
+}
+
+func (s *TrainingRuntimeSpecWrapper) TemplateAnnotation(key, value string) *TrainingRuntimeSpecWrapper {
+	if s.Template.Annotations == nil {
+		s.Template.Annotations = make(map[string]string)
+	}
+	s.Template.Annotations[key] = value
 	return s
 }
 

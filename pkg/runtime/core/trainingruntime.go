@@ -151,6 +151,27 @@ func (r *TrainingRuntime) newRuntimeInfo(
 ) (*runtime.Info, error) {
 	propagationLabels := maps.Clone(jobSetTemplateSpec.Labels)
 	propagationAnnotations := maps.Clone(jobSetTemplateSpec.Annotations)
+
+	if len(trainJob.Labels) > 0 {
+		if propagationLabels == nil {
+			propagationLabels = make(map[string]string, len(trainJob.Labels))
+		}
+		for k, v := range trainJob.Labels {
+			propagationLabels[k] = v
+		}
+	}
+	if len(trainJob.Annotations) > 0 {
+		if propagationAnnotations == nil {
+			propagationAnnotations = make(map[string]string, len(trainJob.Annotations))
+		}
+		for k, v := range trainJob.Annotations {
+			if k == corev1.LastAppliedConfigAnnotation {
+				continue
+			}
+			propagationAnnotations[k] = v
+		}
+	}
+
 	for _, patch := range trainJob.Spec.RuntimePatches {
 		if patch.TrainingRuntimeSpec != nil && patch.TrainingRuntimeSpec.Template != nil && patch.TrainingRuntimeSpec.Template.Metadata != nil {
 			if propagationLabels == nil && len(patch.TrainingRuntimeSpec.Template.Metadata.Labels) > 0 {

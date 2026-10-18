@@ -152,6 +152,50 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 					Obj(),
 			},
 		},
+		"succeeded to propagate metadata labels and annotations from TrainJob to JobSet while filtering last-applied-configuration": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").
+				RuntimeSpec(
+					testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").Spec).
+						TemplateLabel("templateLabel", "templateVal").
+						TemplateAnnotation("templateAnnotation", "templateVal").
+						WithMLPolicy(
+							testingutil.MakeMLPolicyWrapper().
+								WithNumNodes(1).
+								Obj(),
+						).
+						Container(constants.DatasetInitializer, constants.DatasetInitializer, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						Container(constants.ModelInitializer, constants.ModelInitializer, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						Container(constants.Node, constants.Node, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+						Obj(),
+				).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				Suspend(true).
+				UID("uid").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Label("kueue.x-k8s.io/queue-name", "user-queue").
+				Label("team", "ml-ops").
+				Annotation("kueue.x-k8s.io/topology-request", "gpu-rack-1").
+				Annotation(corev1.LastAppliedConfigAnnotation, `{"kind":"TrainJob"}`).
+				Obj(),
+			wantObjs: []runtime.Object{
+				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
+					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
+					Suspend(true).
+					Label("templateLabel", "templateVal").
+					Label("kueue.x-k8s.io/queue-name", "user-queue").
+					Label("team", "ml-ops").
+					Annotation("templateAnnotation", "templateVal").
+					Annotation("kueue.x-k8s.io/topology-request", "gpu-rack-1").
+					Replicas(1, constants.DatasetInitializer, constants.ModelInitializer, constants.Node, constants.Launcher).
+					Parallelism(1, constants.DatasetInitializer, constants.ModelInitializer, constants.Launcher).
+					Completions(1, constants.DatasetInitializer, constants.ModelInitializer, constants.Launcher).
+					NumNodes(1).
+					Container(constants.DatasetInitializer, constants.DatasetInitializer, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					Container(constants.ModelInitializer, constants.ModelInitializer, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					Container(constants.Node, constants.Node, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					Obj(),
+			},
+		},
 		"succeeded to build JobSet with NumNodes from the Runtime and container from the TrainJob.": {
 			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
 				testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").Spec).
