@@ -1,0 +1,125 @@
+# Copyright The Kubeflow Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Prerequisites: the OptimizationJob controller, TrainJobStatus=true, and the
+# default torch-distributed ClusterTrainingRuntime. No GPUs or dataset downloads.
+# Apply: kubectl apply -f examples/optimizationjob/random-search.yaml
+# Clean: kubectl delete optimizationjob linear-regression-search
+apiVersion: trainer.kubeflow.org/v1alpha1
+kind: OptimizationJob
+metadata:
+  name: linear-regression-search
+spec:
+  numTrials: 4
+  parallelTrials: 2
+  searchAlgorithm:
+    random:
+      seed: 42
+  objectives:
+    - metric: validation_loss
+      direction: Minimize
+  parameters:
+    - name: learning_rate
+      searchSpace:
+        logUniform:
+          min: "0.01"
+          max: "0.2"
+          type: Float
+    - name: epochs
+      searchSpace:
+        categorical:
+          choices: ["10", "20", "40"]
+  trainJobTemplate:
+    spec:
+      runtimeRef:
+        apiGroup: trainer.kubeflow.org
+        kind: ClusterTrainingRuntime
+        name: torch-distributed
+      trainer:
+        numNodes: 1
+        numProcPerNode: 1
+        resourcesPerNode:
+          requests:
+            cpu: "1"
+            memory: 128Mi
+          limits:
+            cpu: "1"
+            memory: 128Mi
+        image: python:3.11-slim-bookworm
+        command:
+          - python3
+          - -c
+          - |
+            import json
+            import logging
+            import os
+            import ssl
+            import time
+            import urllib.error
+            import urllib.request
+            from datetime import datetime, timezone
+            from pathlib import Path
+
+            logging.basicConfig(level=logging.INFO)
+            learning_rate = float(os.environ["KUBEFLOW_TRAINER_OPT_learning_rate"])
+            epochs = int(os.environ["KUBEFLOW_TRAINER_OPT_epochs"])
+
+            # Fit y = 2x + 1 with gradient descent on fixed training data.
+            train_x = [-1.0, -0.5, 0.0, 0.5, 1.0]
+            weight, bias = 0.0, 0.0
+            for _ in range(epochs):
+                errors = [weight * x + bias - (2 * x + 1) for x in train_x]
+                weight -= learning_rate * 2 * sum(
+                    error * x for error, x in zip(errors, train_x)
+                ) / len(train_x)
+                bias -= learning_rate * 2 * sum(errors) / len(train_x)
+
+            validation_x = [-0.75, -0.25, 0.25, 0.75]
+            loss = sum(
+                (weight * x + bias - (2 * x + 1)) ** 2 for x in validation_x
+            ) / len(validation_x)
+            logging.info("learning_rate=%s epochs=%s validation_loss=%s",
+                         learning_rate, epochs, loss)
+
+            # Persist the objective before exiting, using Trainer's injected credentials.
+            payload = json.dumps({"trainerStatus": {
+                "progressPercentage": 100,
+                "lastUpdatedTime": datetime.now(timezone.utc).isoformat(),
+                "metrics": [{"name": "validation_loss", "value": str(loss)}],
+            }}).encode()
+            tls = ssl.create_default_context(
+                cafile=os.environ["KUBEFLOW_TRAINER_SERVER_CA_CERT"]
+            )
+            for attempt in range(3):
+                token = Path(os.environ["KUBEFLOW_TRAINER_SERVER_TOKEN"]).read_text().strip()
+                request = urllib.request.Request(
+                    os.environ["KUBEFLOW_TRAINER_SERVER_URL"],
+                    data=payload,
+                    headers={"Authorization": f"Bearer {token}",
+                             "Content-Type": "application/json"},
+                    method="POST",
+                )
+                try:
+                    with urllib.request.urlopen(request, context=tls, timeout=10) as response:
+                        response.read()
+                    break
+                except urllib.error.HTTPError as error:
+                    if error.code < 500 and error.code != 429:
+                        raise
+                    if attempt == 2:
+                        raise
+                except (urllib.error.URLError, TimeoutError):
+                    if attempt == 2:
+                        raise
+                time.sleep(5)
