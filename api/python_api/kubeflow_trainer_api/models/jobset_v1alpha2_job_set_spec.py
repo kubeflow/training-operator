@@ -35,6 +35,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, Strict
 from typing import Any, ClassVar, Dict, List, Optional
 from kubeflow_trainer_api.models.jobset_v1alpha2_coordinator import JobsetV1alpha2Coordinator
 from kubeflow_trainer_api.models.jobset_v1alpha2_failure_policy import JobsetV1alpha2FailurePolicy
+from kubeflow_trainer_api.models.jobset_v1alpha2_job_set_scheduling import JobsetV1alpha2JobSetScheduling
 from kubeflow_trainer_api.models.jobset_v1alpha2_network import JobsetV1alpha2Network
 from kubeflow_trainer_api.models.jobset_v1alpha2_replicated_job import JobsetV1alpha2ReplicatedJob
 from kubeflow_trainer_api.models.jobset_v1alpha2_startup_policy import JobsetV1alpha2StartupPolicy
@@ -47,17 +48,19 @@ class JobsetV1alpha2JobSetSpec(BaseModel):
     """
     JobSetSpec defines the desired state of JobSet
     """ # noqa: E501
+    active_deadline_seconds: Optional[StrictInt] = Field(default=None, description="activeDeadlineSeconds is the maximum duration in seconds, relative to status.startTime, that the JobSet may be continuously active before the JobSet controller marks it Failed and deletes its active Jobs.  The timer does not accrue while the JobSet is suspended: startTime is cleared on suspend and reset when the JobSet resumes. The value must be a positive integer. The field is mutable: operators may raise or lower the deadline on a running JobSet, matching batch/v1.Job. The controller recomputes the remaining time from status.startTime on the next reconcile, so no timer state is reset on update.", alias="activeDeadlineSeconds")
     coordinator: Optional[JobsetV1alpha2Coordinator] = Field(default=None, description="coordinator can be used to assign a specific pod as the coordinator for the JobSet. If defined, an annotation will be added to all Jobs and pods with coordinator pod, which contains the stable network endpoint where the coordinator pod can be reached. jobset.sigs.k8s.io/coordinator=<pod hostname>.<headless service>")
     failure_policy: Optional[JobsetV1alpha2FailurePolicy] = Field(default=None, description="failurePolicy configures when to declare the JobSet as failed. The JobSet is always declared failed if any job in the set finished with status failed.", alias="failurePolicy")
-    managed_by: Optional[StrictStr] = Field(default=None, description="managedBy is used to indicate the controller or entity that manages a JobSet. The built-in JobSet controller reconciles JobSets which don't have this field at all or the field value is the reserved string `jobset.sigs.k8s.io/jobset-controller`, but skips reconciling JobSets with a custom value for this field.  The value must be a valid domain-prefixed path (e.g. acme.io/foo) - all characters before the first \"/\" must be a valid subdomain as defined by RFC 1123. All characters trailing the first \"/\" must be valid HTTP Path characters as defined by RFC 3986. The value cannot exceed 63 characters. The field is immutable.", alias="managedBy")
+    managed_by: Optional[StrictStr] = Field(default=None, description="managedBy is used to indicate the controller or entity that manages a JobSet. The built-in JobSet controller reconciles JobSets which don't have this field at all or the field value is the reserved string `jobset.sigs.k8s.io/jobset-controller`, but skips reconciling JobSets with a custom value for this field. Note that ttlSecondsAfterFinished cleanup still applies to externally managed JobSets once the managing controller has recorded a terminal condition.  The value must be a valid domain-prefixed path (e.g. acme.io/foo) - all characters before the first \"/\" must be a valid subdomain as defined by RFC 1123. All characters trailing the first \"/\" must be valid HTTP Path characters as defined by RFC 3986. The value cannot exceed 63 characters. The field is immutable.", alias="managedBy")
     network: Optional[JobsetV1alpha2Network] = Field(default=None, description="network defines the networking options for the jobset.")
     replicated_jobs: Optional[List[JobsetV1alpha2ReplicatedJob]] = Field(default=None, description="replicatedJobs is the group of jobs that will form the set.", alias="replicatedJobs")
+    scheduling: Optional[JobsetV1alpha2JobSetScheduling] = Field(default=None, description="scheduling defines the Workload-Aware Scheduling configuration for this JobSet. When nil, no scheduling objects are created and behavior is unchanged. When set (even to {}), the controller compiles a Workload resource (containing PodGroupTemplates) and materializes the corresponding PodGroup objects for the scheduler. Requires the JobSetWorkloadAwareSchedulingAPI feature gate.")
     startup_policy: Optional[JobsetV1alpha2StartupPolicy] = Field(default=None, description="startupPolicy configures in what order jobs must be started Deprecated: StartupPolicy is deprecated, please use the DependsOn API.", alias="startupPolicy")
     success_policy: Optional[JobsetV1alpha2SuccessPolicy] = Field(default=None, description="successPolicy configures when to declare the JobSet as succeeded. The JobSet is always declared succeeded if all jobs in the set finished with status complete.", alias="successPolicy")
     suspend: Optional[StrictBool] = Field(default=None, description="suspend suspends all running child Jobs when set to true.")
-    ttl_seconds_after_finished: Optional[StrictInt] = Field(default=None, description="ttlSecondsAfterFinished limits the lifetime of a JobSet that has finished execution (either Complete or Failed). If this field is set, TTLSecondsAfterFinished after the JobSet finishes, it is eligible to be automatically deleted. When the JobSet is being deleted, its lifecycle guarantees (e.g. finalizers) will be honored. If this field is unset, the JobSet won't be automatically deleted. If this field is set to zero, the JobSet becomes eligible to be deleted immediately after it finishes.", alias="ttlSecondsAfterFinished")
+    ttl_seconds_after_finished: Optional[StrictInt] = Field(default=None, description="ttlSecondsAfterFinished limits the lifetime of a JobSet that has finished execution (either Complete or Failed). If this field is set, TTLSecondsAfterFinished after the JobSet finishes, it is eligible to be automatically deleted. When the JobSet is being deleted, its lifecycle guarantees (e.g. finalizers) will be honored. If this field is unset, the JobSet won't be automatically deleted. If this field is set to zero, the JobSet becomes eligible to be deleted immediately after it finishes. For JobSets that set managedBy to an external controller, TTL cleanup becomes eligible only after that controller records a terminal (Completed or Failed) condition.", alias="ttlSecondsAfterFinished")
     volume_claim_policies: Optional[List[JobsetV1alpha2VolumeClaimPolicy]] = Field(default=None, description="volumeClaimPolicies is a list of policies for persistent volume claims that pods are allowed to reference. JobSet controller automatically adds the required volume claims to the pod template. Every claim in this list must have at least one matching (by name) volumeMount in one container in the template.", alias="volumeClaimPolicies")
-    __properties: ClassVar[List[str]] = ["coordinator", "failurePolicy", "managedBy", "network", "replicatedJobs", "startupPolicy", "successPolicy", "suspend", "ttlSecondsAfterFinished", "volumeClaimPolicies"]
+    __properties: ClassVar[List[str]] = ["activeDeadlineSeconds", "coordinator", "failurePolicy", "managedBy", "network", "replicatedJobs", "scheduling", "startupPolicy", "successPolicy", "suspend", "ttlSecondsAfterFinished", "volumeClaimPolicies"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -114,6 +117,9 @@ class JobsetV1alpha2JobSetSpec(BaseModel):
                 if _item_replicated_jobs:
                     _items.append(_item_replicated_jobs.to_dict())
             _dict['replicatedJobs'] = _items
+        # override the default output from pydantic by calling `to_dict()` of scheduling
+        if self.scheduling:
+            _dict['scheduling'] = self.scheduling.to_dict()
         # override the default output from pydantic by calling `to_dict()` of startup_policy
         if self.startup_policy:
             _dict['startupPolicy'] = self.startup_policy.to_dict()
@@ -139,11 +145,13 @@ class JobsetV1alpha2JobSetSpec(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "activeDeadlineSeconds": obj.get("activeDeadlineSeconds"),
             "coordinator": JobsetV1alpha2Coordinator.from_dict(obj["coordinator"]) if obj.get("coordinator") is not None else None,
             "failurePolicy": JobsetV1alpha2FailurePolicy.from_dict(obj["failurePolicy"]) if obj.get("failurePolicy") is not None else None,
             "managedBy": obj.get("managedBy"),
             "network": JobsetV1alpha2Network.from_dict(obj["network"]) if obj.get("network") is not None else None,
             "replicatedJobs": [JobsetV1alpha2ReplicatedJob.from_dict(_item) for _item in obj["replicatedJobs"]] if obj.get("replicatedJobs") is not None else None,
+            "scheduling": JobsetV1alpha2JobSetScheduling.from_dict(obj["scheduling"]) if obj.get("scheduling") is not None else None,
             "startupPolicy": JobsetV1alpha2StartupPolicy.from_dict(obj["startupPolicy"]) if obj.get("startupPolicy") is not None else None,
             "successPolicy": JobsetV1alpha2SuccessPolicy.from_dict(obj["successPolicy"]) if obj.get("successPolicy") is not None else None,
             "suspend": obj.get("suspend"),

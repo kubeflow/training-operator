@@ -17,17 +17,67 @@ limitations under the License.
 package webhooks
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/klog/v2/ktesting"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
+	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/constants"
 	testingutil "github.com/kubeflow/trainer/v2/pkg/util/testing"
 )
+
+func TestTrainingRuntimeValidateCreate(t *testing.T) {
+	cases := map[string]struct {
+		labels   map[string]string
+		warnings admission.Warnings
+	}{
+		"no deprecation label": {
+			labels:   nil,
+			warnings: nil,
+		},
+		"support=deprecated": {
+			labels: map[string]string{constants.LabelSupport: constants.SupportDeprecated},
+			warnings: admission.Warnings{
+				"TrainingRuntime \"test-runtime\" is deprecated and will be removed in a future release of Kubeflow Trainer. See runtime deprecation policy: " + constants.RuntimeDeprecationPolicyURL,
+			},
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, ctx := ktesting.NewTestContext(t)
+			ctx, cancel := context.WithCancel(ctx)
+			t.Cleanup(cancel)
+
+			obj := testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").Obj()
+			// Set valid replicas to avoid validation errors
+			for i := range obj.Spec.Template.Spec.ReplicatedJobs {
+				obj.Spec.Template.Spec.ReplicatedJobs[i].Replicas = 1
+			}
+
+			if len(tc.labels) != 0 {
+				obj.Labels = tc.labels
+			}
+
+			validator := &TrainingRuntimeValidator{}
+			warnings, err := validator.ValidateCreate(ctx, obj)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if diff := cmp.Diff(tc.warnings, warnings); diff != "" {
+				t.Fatalf("unexpected warnings (-want, +got): %s", diff)
+			}
+		})
+	}
+}
 
 func TestValidateReplicatedJobs(t *testing.T) {
 	cases := map[string]struct {
@@ -76,6 +126,38 @@ func TestValidateReplicatedJobs(t *testing.T) {
 					[]corev1.Container{{Name: "test"}}, ""),
 			},
 		},
+		"container claim referencing a pod resourceClaim": {
+			rJobs: testingutil.MakeJobSetWrapper("ns", "valid").
+				Replicas(1, constants.Node, constants.DatasetInitializer, constants.ModelInitializer).
+				PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("gpu-template")}).
+				ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
+				Obj().Spec.ReplicatedJobs,
+		},
+		"container claim without a matching pod resourceClaim": {
+			rJobs: testingutil.MakeJobSetWrapper("ns", "valid").
+				Replicas(1, constants.Node, constants.DatasetInitializer, constants.ModelInitializer).
+				ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
+				Obj().Spec.ReplicatedJobs,
+			wantError: field.ErrorList{
+				field.Invalid(field.NewPath("spec").Child("template").Child("spec").Child("replicatedJobs").Index(2).
+					Child("template").Child("spec").Child("template").Child("spec").Child("containers").Index(0).
+					Child("resources").Child("claims").Index(0),
+					"gpu", ""),
+			},
+		},
+		"initContainer claim without a matching pod resourceClaim": {
+			rJobs: testingutil.MakeJobSetWrapper("ns", "valid").
+				Replicas(1, constants.Node, constants.DatasetInitializer, constants.ModelInitializer).
+				InitContainer(constants.Node, "init", "test").
+				ContainerResourceClaims(constants.Node, "init", corev1.ResourceClaim{Name: "gpu"}).
+				Obj().Spec.ReplicatedJobs,
+			wantError: field.ErrorList{
+				field.Invalid(field.NewPath("spec").Child("template").Child("spec").Child("replicatedJobs").Index(2).
+					Child("template").Child("spec").Child("template").Child("spec").Child("initContainers").Index(0).
+					Child("resources").Child("claims").Index(0),
+					"gpu", ""),
+			},
+		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -84,5 +166,85 @@ func TestValidateReplicatedJobs(t *testing.T) {
 				t.Errorf("validateReplicateJobs() mismatch (-want,+got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestTrainingRuntimeValidateUpdate(t *testing.T) {
+	cases := map[string]struct {
+		oldObj    *trainer.TrainingRuntime
+		newObj    *trainer.TrainingRuntime
+		wantError field.ErrorList
+	}{
+		"valid update succeeds": {
+			oldObj: testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").Obj(),
+			newObj: func() *trainer.TrainingRuntime {
+				obj := testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").Obj()
+				for i := range obj.Spec.Template.Spec.ReplicatedJobs {
+					obj.Spec.Template.Spec.ReplicatedJobs[i].Replicas = 1
+				}
+				return obj
+			}(),
+		},
+		"invalid update with invalid replicas fails": {
+			oldObj: testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").Obj(),
+			newObj: func() *trainer.TrainingRuntime {
+				obj := testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").Obj()
+				for i := range obj.Spec.Template.Spec.ReplicatedJobs {
+					obj.Spec.Template.Spec.ReplicatedJobs[i].Replicas = 2
+				}
+				return obj
+			}(),
+			wantError: field.ErrorList{
+				field.Invalid(field.NewPath("spec").Child("template").Child("spec").Child("replicatedJobs").Index(0).Child("replicas"), int32(2), ""),
+				field.Invalid(field.NewPath("spec").Child("template").Child("spec").Child("replicatedJobs").Index(1).Child("replicas"), int32(2), ""),
+				field.Invalid(field.NewPath("spec").Child("template").Child("spec").Child("replicatedJobs").Index(2).Child("replicas"), int32(2), ""),
+			},
+		},
+		"update from invalid old object succeeds": {
+			oldObj: func() *trainer.TrainingRuntime {
+				obj := testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").Obj()
+				for i := range obj.Spec.Template.Spec.ReplicatedJobs {
+					obj.Spec.Template.Spec.ReplicatedJobs[i].Replicas = 2
+				}
+				return obj
+			}(),
+			newObj: func() *trainer.TrainingRuntime {
+				obj := testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").Obj()
+				for i := range obj.Spec.Template.Spec.ReplicatedJobs {
+					obj.Spec.Template.Spec.ReplicatedJobs[i].Replicas = 1
+				}
+				return obj
+			}(),
+		},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, ctx := ktesting.NewTestContext(t)
+			ctx, cancel := context.WithCancel(ctx)
+			t.Cleanup(cancel)
+
+			validator := &TrainingRuntimeValidator{}
+			warnings, err := validator.ValidateUpdate(ctx, tc.oldObj, tc.newObj)
+			if diff := cmp.Diff(tc.wantError.ToAggregate(), err, cmpopts.IgnoreFields(field.Error{}, "Detail")); len(diff) != 0 {
+				t.Errorf("Unexpected error from ValidateUpdate (-want, +got): %s", diff)
+			}
+			if len(warnings) != 0 {
+				t.Errorf("ValidateUpdate() warnings = %v, want nil", warnings)
+			}
+		})
+	}
+}
+
+func TestTrainingRuntimeValidateDelete(t *testing.T) {
+	_, ctx := ktesting.NewTestContext(t)
+	validator := &TrainingRuntimeValidator{}
+	obj := testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").Obj()
+	warnings, err := validator.ValidateDelete(ctx, obj)
+	if err != nil {
+		t.Fatalf("ValidateDelete() unexpected error: %v", err)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("ValidateDelete() warnings = %v, want nil", warnings)
 	}
 }

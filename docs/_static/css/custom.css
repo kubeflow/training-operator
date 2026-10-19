@@ -27,31 +27,14 @@ body {
    ============================================ */
 
 .announcement {
-    background: #2D3748 !important;
-    border-bottom: 1px solid #3a4560 !important;
+    background: var(--color-background-primary, #fff) !important;
+    border-bottom: 1px solid var(--color-background-border, #e2e8f0) !important;
     padding: 0 !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
     z-index: 100 !important;
-}
-
-.top-nav-brand {
-    color: #e2e8f0 !important;
-}
-
-.top-nav-brand:hover {
-    color: #fff !important;
-}
-
-.top-nav-links a {
-    color: #cbd5e0 !important;
-}
-
-.top-nav-links a:hover {
-    color: #fff !important;
-    background: rgba(255,255,255,0.1);
 }
 
 .page {
@@ -89,13 +72,13 @@ body {
     align-items: center;
     gap: 0.5rem;
     text-decoration: none !important;
-    color: #e2e8f0 !important;
+    color: var(--color-foreground-primary, #1a202c) !important;
     font-weight: 600;
     font-size: 1.1rem;
 }
 
 .top-nav-brand:hover {
-    color: #fff !important;
+    color: var(--color-brand-primary, #4299e1) !important;
 }
 
 .top-nav-logo {
@@ -105,11 +88,12 @@ body {
 
 .top-nav-links {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
 }
 
 .top-nav-links a {
-    color: #cbd5e0 !important;
+    color: var(--color-foreground-secondary, #2d3748) !important;
     text-decoration: none !important;
     padding: 0.4rem 0.75rem;
     border-radius: 4px;
@@ -118,16 +102,55 @@ body {
 }
 
 .top-nav-links a:hover {
-    color: #fff !important;
-    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-brand-primary, #4299e1) !important;
+    background: var(--color-background-hover, rgba(0, 0, 0, 0.04));
+}
+
+/* Light/dark/auto mode toggle button */
+.top-nav-theme-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-left: 0.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-foreground-secondary, #2d3748) !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.top-nav-theme-toggle:hover {
+    color: var(--color-brand-primary, #4299e1) !important;
+    background: var(--color-background-hover, rgba(0, 0, 0, 0.04));
+}
+
+.top-nav-theme-toggle svg {
+    color: var(--color-foreground-secondary, #2d3748) !important;
+    width: 16px !important;
+    height: 16px !important;
+}
+
+/* Hide Furo's built-in theme toggle since we have the top-nav theme toggle */
+.theme-toggle-container,
+.theme-toggle-content,
+.theme-toggle:not(.top-nav-theme-toggle) {
+    display: none !important;
+}
+
+.top-nav-theme-toggle:hover svg {
+    color: var(--color-brand-primary, #4299e1) !important;
 }
 
 @media (max-width: 768px) {
     .top-nav-links {
-        display: none;
+        display: flex;
     }
-    .top-nav {
-        justify-content: center;
+    .top-nav-links a {
+        display: none !important;
     }
 }
 
@@ -242,6 +265,17 @@ li::marker {
 .sidebar-tree .toctree-l3 > .reference {
     font-weight: 400;
     font-size: 0.9rem;
+}
+
+/* Sidebar: always expand the User Guides and Operator Guides sections */
+.sidebar-tree .toctree-l1 > .toctree-checkbox[aria-label*="User Guides"] ~ ul,
+.sidebar-tree .toctree-l1 > .toctree-checkbox[aria-label*="Operator Guides"] ~ ul {
+    display: block;
+}
+
+.sidebar-tree .toctree-l1 > .toctree-checkbox[aria-label*="User Guides"] ~ label,
+.sidebar-tree .toctree-l1 > .toctree-checkbox[aria-label*="Operator Guides"] ~ label {
+    display: none;
 }
 
 /* Sidebar: make it stick while scrolling */
@@ -601,13 +635,43 @@ body:has(.landing-page) .bottom-of-page {
 }
 
 body:has(.landing-page) .content-icon-container,
-body:has(.landing-page) .theme-toggle-container,
-body:has(.landing-page) .theme-toggle-content,
-body:has(.landing-page) .theme-toggle,
 body:has(.landing-page) .related-pages,
 body:has(.landing-page) .nav-overlay-icon,
 body:has(.landing-page) .sidebar-toggle {
     display: none !important;
+}
+
+body:has(.landing-page) footer:not(.landing-footer),
+body.is-landing footer:not(.landing-footer) {
+    border-top: none !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    background-color: #0c1b33 !important;
+}
+
+/* Remove border-top divider from ethical ads and ReadTheDocs addons on the landing page */
+body:has(.landing-page) .ethical-ads-footer,
+body:has(.landing-page) #ethical-ad-placement,
+body:has(.landing-page) readthedocs-addons,
+body:has(.landing-page) .rst-versions,
+body.is-landing .ethical-ads-footer,
+body.is-landing #ethical-ad-placement,
+body.is-landing readthedocs-addons,
+body.is-landing .rst-versions {
+    border-top: none !important;
+}
+
+/* Make ethical ads background transparent */
+body:has(.landing-page) .ethical-ads-footer,
+body:has(.landing-page) .ethical-ads-footer *,
+body:has(.landing-page) #ethical-ad-placement,
+body:has(.landing-page) #ethical-ad-placement *,
+body.is-landing .ethical-ads-footer,
+body.is-landing .ethical-ads-footer *,
+body.is-landing #ethical-ad-placement,
+body.is-landing #ethical-ad-placement * {
+    background: transparent !important;
+    background-color: transparent !important;
 }
 
 body:has(.landing-page) .article-container {
@@ -615,6 +679,11 @@ body:has(.landing-page) .article-container {
     width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
+}
+
+.landing-page ~ .image-reference,
+.landing-page ~ .toctree-wrapper {
+    display: none !important;
 }
 
 /* Font import — DM Sans for headings, Source Sans 3 for body */
@@ -636,6 +705,35 @@ body:has(.landing-page) .article-container {
     color: var(--lp-text);
     line-height: 1.6;
     background: #1a1c24;
+}
+
+/* Light Mode */
+body[data-theme="light"] .landing-page {
+    --lp-blue: #3182ce;
+    --lp-blue-deep: #1a3a6b;
+    --lp-blue-glow: #4299e1;
+    --lp-navy: #0c1b33;
+    --lp-surface: #ffffff;
+    --lp-surface-alt: #f7fafc;
+    --lp-text: #1a202c;
+    --lp-text-muted: #4a5568;
+    --lp-border: #e2e8f0;
+    background: #ffffff;
+}
+
+@media not (prefers-color-scheme: dark) {
+    body:not([data-theme="dark"]) .landing-page {
+        --lp-blue: #3182ce;
+        --lp-blue-deep: #1a3a6b;
+        --lp-blue-glow: #4299e1;
+        --lp-navy: #0c1b33;
+        --lp-surface: #ffffff;
+        --lp-surface-alt: #f7fafc;
+        --lp-text: #1a202c;
+        --lp-text-muted: #4a5568;
+        --lp-border: #e2e8f0;
+        background: #ffffff;
+    }
 }
 
 .landing-page .section-title {
@@ -1236,9 +1334,6 @@ body.is-landing .bottom-of-page {
 }
 
 body.is-landing .content-icon-container,
-body.is-landing .theme-toggle-container,
-body.is-landing .theme-toggle-content,
-body.is-landing .theme-toggle,
 body.is-landing .related-pages,
 body.is-landing .nav-overlay-icon,
 body.is-landing .sidebar-toggle {
@@ -1270,3 +1365,28 @@ body.is-landing .sidebar-toggle {
 .community-card:nth-child(2).animate-on-scroll { transition-delay: 0.05s; }
 .community-card:nth-child(3).animate-on-scroll { transition-delay: 0.1s; }
 .community-card:nth-child(4).animate-on-scroll { transition-delay: 0.15s; }
+
+/* ============================================
+   READTHEDOCS ADDONS OVERRIDES
+   ============================================ */
+
+/* Force-disable link preview tooltips and dotted underlines */
+div[data-linkpreview-href],
+readthedocs-linkpreviews {
+    display: none !important;
+}
+
+a.link-preview {
+    border-bottom: none !important;
+}
+
+/* EthicalAds: horizontal text ad at page bottom via footer block */
+.ethical-ads-footer {
+    margin: 2rem 0 0;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    max-width: none;
+    border-top: 1px solid var(--color-foreground-border, #4a5568);
+    font-size: 0.85rem;
+    text-align: center;
+}

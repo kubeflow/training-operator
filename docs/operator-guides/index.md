@@ -60,6 +60,13 @@ Customize job templates for different frameworks
 Customize training runtime configuration with RuntimePatches
 ::::
 
+::::{grid-item-card} Dynamic Resource Allocation (DRA)
+:link: dynamic-resource-allocation
+:link-type: doc
+
+Use Kubernetes DRA to allocate hardware resources for TrainJobs
+::::
+
 :::::
 
 ## Advanced Configuration
@@ -78,7 +85,7 @@ Understand the plugin-based extension architecture
 :link: job-scheduling/index
 :link-type: doc
 
-Integrate with Volcano, Kueue, Coscheduling, and KAI Scheduler
+Integrate with Kueue, Slurm Bridge, KAI Scheduler, Coscheduling, and Volcano
 ::::
 
 :::::
@@ -95,6 +102,7 @@ runtime
 ml-policy
 job-template
 runtime-patches
+dynamic-resource-allocation
 extension-framework
 job-scheduling/index
 ```

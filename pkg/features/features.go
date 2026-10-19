@@ -17,13 +17,9 @@ limitations under the License.
 package features
 
 import (
-	"fmt"
-	"testing"
-
 	"k8s.io/apimachinery/pkg/util/runtime"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/component-base/featuregate"
-	featuregatetesting "k8s.io/component-base/featuregate/testing"
 )
 
 func init() {
@@ -36,6 +32,13 @@ const (
 	//
 	// Enables status server allowing TrainJob pods to update their status.
 	TrainJobStatus featuregate.Feature = "TrainJobStatus"
+
+	// owner: Sridhar1030
+	// kep: https://github.com/kubeflow/trainer/blob/master/proposals/2782-dra-support/README.md
+	//
+	// Enables Dynamic Resource Allocation (DRA) support: trainer.resourceClaimsPerNode and
+	// resourceClaims / resources.claims in runtimePatches.
+	TrainJobDynamicResourceAllocation featuregate.Feature = "TrainJobDynamicResourceAllocation"
 )
 
 // defaultFeatureGates consists of all known Trainer-specific feature keys.
@@ -46,20 +49,11 @@ const (
 // when adding or removing one entry.
 var defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	TrainJobStatus: {Default: false, PreRelease: featuregate.Alpha},
-}
 
-func SetFeatureGateDuringTest(tb testing.TB, f featuregate.Feature, value bool) {
-	featuregatetesting.SetFeatureGateDuringTest(tb, utilfeature.DefaultFeatureGate, f, value)
+	TrainJobDynamicResourceAllocation: {Default: false, PreRelease: featuregate.Alpha},
 }
 
 // Enabled is helper for `utilfeature.DefaultFeatureGate.Enabled()`
 func Enabled(f featuregate.Feature) bool {
 	return utilfeature.DefaultFeatureGate.Enabled(f)
-}
-
-// SetEnable helper function that can be used to set the enabled value of a feature gate,
-// it should only be used in integration test pending the merge of
-// https://github.com/kubernetes/kubernetes/pull/118346
-func SetEnable(f featuregate.Feature, v bool) error {
-	return utilfeature.DefaultMutableFeatureGate.Set(fmt.Sprintf("%s=%v", f, v))
 }

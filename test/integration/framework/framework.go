@@ -27,6 +27,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/ptr"
@@ -44,13 +45,15 @@ import (
 
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/controller"
+	"github.com/kubeflow/trainer/v2/pkg/features"
 	runtimecore "github.com/kubeflow/trainer/v2/pkg/runtime/core"
 	kubeflowwebhooks "github.com/kubeflow/trainer/v2/pkg/webhooks"
 )
 
 type Framework struct {
-	testEnv *envtest.Environment
-	cancel  context.CancelFunc
+	testEnv          *envtest.Environment
+	cancel           context.CancelFunc
+	SuggestionClient controller.SearchAlgorithmClient
 }
 
 func (f *Framework) Init() *rest.Config {
@@ -101,6 +104,9 @@ func (f *Framework) RunManager(cfg *rest.Config, startControllers bool) (context
 	})
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "failed to create manager")
 
+	// Alpha feature gates exercised by the integration suites.
+	gomega.ExpectWithOffset(1, utilfeature.DefaultMutableFeatureGate.Set(string(features.TrainJobDynamicResourceAllocation)+"=true")).To(gomega.Succeed())
+
 	runtimes, err := runtimecore.New(ctx, mgr.GetClient(), mgr.GetFieldIndexer(), nil)
 	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
 	gomega.ExpectWithOffset(1, runtimes).NotTo(gomega.BeNil())
@@ -114,7 +120,7 @@ func (f *Framework) RunManager(cfg *rest.Config, startControllers bool) (context
 			// https://github.com/kubernetes-sigs/controller-runtime/pull/2902#issuecomment-2284194683
 			// https://github.com/kubernetes-sigs/controller-runtime/issues/2994
 			SkipNameValidation: ptr.To(true),
-		})
+		}, f.SuggestionClient)
 		gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), "controller", failedCtrlName)
 		gomega.ExpectWithOffset(1, failedCtrlName).To(gomega.BeEmpty())
 	}

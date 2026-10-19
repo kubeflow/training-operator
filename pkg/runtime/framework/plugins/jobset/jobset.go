@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"slices"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -31,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
 	metav1ac "k8s.io/client-go/applyconfigurations/meta/v1"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,6 +50,7 @@ import (
 	"github.com/kubeflow/trainer/v2/pkg/constants"
 	"github.com/kubeflow/trainer/v2/pkg/runtime"
 	"github.com/kubeflow/trainer/v2/pkg/runtime/framework"
+	jobsetplgconsts "github.com/kubeflow/trainer/v2/pkg/runtime/framework/plugins/jobset/constants"
 	"github.com/kubeflow/trainer/v2/pkg/util/trainjob"
 )
 
@@ -64,7 +67,7 @@ type JobSet struct {
 }
 
 var _ framework.WatchExtensionPlugin = (*JobSet)(nil)
-var _ framework.PodNetworkPlugin = (*JobSet)(nil)
+var _ framework.PreComponentBuilderPlugin = (*JobSet)(nil)
 var _ framework.ComponentBuilderPlugin = (*JobSet)(nil)
 var _ framework.TrainJobStatusPlugin = (*JobSet)(nil)
 var _ framework.CustomValidationPlugin = (*JobSet)(nil)
@@ -97,6 +100,7 @@ func (j *JobSet) Validate(ctx context.Context, info *runtime.Info, oldObj, newOb
 	rJobContainerNames := make(map[string]sets.Set[string])
 	for _, rJob := range jobSetSpec.ReplicatedJobs {
 		rJobContainerNames[*rJob.Name] = sets.New[string]()
+
 		// Names of initContainer and containers are unique.
 		for _, c := range rJob.Template.Spec.Template.Spec.InitContainers {
 			rJobContainerNames[*rJob.Name].Insert(*c.Name)
@@ -107,18 +111,62 @@ func (j *JobSet) Validate(ctx context.Context, info *runtime.Info, oldObj, newOb
 	}
 
 	if newObj.Spec.Initializer != nil && newObj.Spec.Initializer.Dataset != nil {
-		if containers, ok := rJobContainerNames[constants.DatasetInitializer]; !ok {
+		containers, ok := rJobContainerNames[constants.DatasetInitializer]
+		if !ok {
 			allErrs = append(allErrs, field.Invalid(runtimeRefPath, newObj.Spec.RuntimeRef, fmt.Sprintf("must have %s job when trainJob is configured with input datasetConfig", constants.DatasetInitializer)))
 		} else if !containers.Has(constants.DatasetInitializer) {
 			allErrs = append(allErrs, field.Invalid(runtimeRefPath, newObj.Spec.RuntimeRef, fmt.Sprintf("must have container with name - %s in the %s job", constants.DatasetInitializer, constants.DatasetInitializer)))
+		} else {
+			hasVolumeMount := false
+			for _, rJob := range jobSetSpec.ReplicatedJobs {
+				if *rJob.Name != constants.DatasetInitializer {
+					continue
+				}
+				for _, c := range rJob.Template.Spec.Template.Spec.Containers {
+					if *c.Name != constants.DatasetInitializer {
+						continue
+					}
+					for _, vm := range c.VolumeMounts {
+						if *vm.Name == jobsetplgconsts.VolumeNameInitializer {
+							hasVolumeMount = true
+							break
+						}
+					}
+				}
+			}
+			if !hasVolumeMount {
+				allErrs = append(allErrs, field.Invalid(runtimeRefPath, newObj.Spec.RuntimeRef, fmt.Sprintf("must have volumeMount with name - %s in container %s of the %s job", jobsetplgconsts.VolumeNameInitializer, constants.DatasetInitializer, constants.DatasetInitializer)))
+			}
 		}
 	}
 
 	if newObj.Spec.Initializer != nil && newObj.Spec.Initializer.Model != nil {
-		if containers, ok := rJobContainerNames[constants.ModelInitializer]; !ok {
+		containers, ok := rJobContainerNames[constants.ModelInitializer]
+		if !ok {
 			allErrs = append(allErrs, field.Invalid(runtimeRefPath, newObj.Spec.RuntimeRef, fmt.Sprintf("must have %s job when trainJob is configured with input modelConfig", constants.ModelInitializer)))
 		} else if !containers.Has(constants.ModelInitializer) {
 			allErrs = append(allErrs, field.Invalid(runtimeRefPath, newObj.Spec.RuntimeRef, fmt.Sprintf("must have container with name - %s in the %s job", constants.ModelInitializer, constants.ModelInitializer)))
+		} else {
+			hasVolumeMount := false
+			for _, rJob := range jobSetSpec.ReplicatedJobs {
+				if *rJob.Name != constants.ModelInitializer {
+					continue
+				}
+				for _, c := range rJob.Template.Spec.Template.Spec.Containers {
+					if *c.Name != constants.ModelInitializer {
+						continue
+					}
+					for _, vm := range c.VolumeMounts {
+						if *vm.Name == jobsetplgconsts.VolumeNameInitializer {
+							hasVolumeMount = true
+							break
+						}
+					}
+				}
+			}
+			if !hasVolumeMount {
+				allErrs = append(allErrs, field.Invalid(runtimeRefPath, newObj.Spec.RuntimeRef, fmt.Sprintf("must have volumeMount with name - %s in container %s of the %s job", jobsetplgconsts.VolumeNameInitializer, constants.ModelInitializer, constants.ModelInitializer)))
+			}
 		}
 	}
 
@@ -156,6 +204,33 @@ func (j *JobSet) Validate(ctx context.Context, info *runtime.Info, oldObj, newOb
 				} else if len(c.Env) > 0 && (c.Name == constants.DatasetInitializer || c.Name == constants.ModelInitializer || c.Name == constants.Node) {
 					allErrs = append(allErrs, field.Invalid(runtimePatchesPath, newObj.Spec.RuntimePatches,
 						fmt.Sprintf("must not have envs for the %s, %s, %s containers", constants.DatasetInitializer, constants.ModelInitializer, constants.Node)))
+				}
+			}
+		}
+	}
+
+	// Every container resources.claims entry must reference a Pod-level resourceClaims entry,
+	// otherwise the API server rejects the Pod only after the JobSet is created.
+	// The runtime webhook rejects dangling claims in the runtime template and
+	// spec.trainer.resourceClaimsPerNode adds both the Pod-level and the container-level entries
+	// (or neither while the feature gate is disabled), so a dangling reference in the merged spec
+	// comes from spec.runtimePatches, or from a runtime (or runtime snapshot) created before that
+	// validation existed.
+	for _, rJob := range jobSetSpec.ReplicatedJobs {
+		podSpec := rJob.Template.Spec.Template.Spec
+		podClaims := sets.New[string]()
+		for _, pc := range podSpec.ResourceClaims {
+			podClaims.Insert(ptr.Deref(pc.Name, ""))
+		}
+		for _, c := range slices.Concat(podSpec.InitContainers, podSpec.Containers) {
+			if c.Resources == nil {
+				continue
+			}
+			for _, claim := range c.Resources.Claims {
+				if name := ptr.Deref(claim.Name, ""); !podClaims.Has(name) {
+					allErrs = append(allErrs, field.Invalid(runtimePatchesPath, name,
+						fmt.Sprintf("container %q in job %q references resourceClaim %q which is not defined in the Pod's resourceClaims",
+							ptr.Deref(c.Name, ""), ptr.Deref(rJob.Name, ""), name)))
 				}
 			}
 		}
@@ -223,7 +298,18 @@ func (j *JobSet) ReconcilerBuilders() []runtime.ReconcilerBuilder {
 	}
 }
 
-func (j *JobSet) IdentifyPodNetwork(info *runtime.Info, trainJob *trainer.TrainJob) error {
+// PreBuildSync consolidates the Info object with the JobSet template before any
+// component is materialized.
+func (j *JobSet) PreBuildSync(info *runtime.Info, trainJob *trainer.TrainJob) error {
+	if err := j.syncPodNetwork(info, trainJob); err != nil {
+		return err
+	}
+	return j.syncParallelCount(info)
+}
+
+// SyncPodNetwork identifies the Pod-to-Pod communication network endpoints for each Pod
+// and stores them in PodSets.Endpoints.
+func (j *JobSet) syncPodNetwork(info *runtime.Info, trainJob *trainer.TrainJob) error {
 	if info == nil || trainJob == nil {
 		return nil
 	}
@@ -246,6 +332,30 @@ func (j *JobSet) IdentifyPodNetwork(info *runtime.Info, trainJob *trainer.TrainJ
 						return
 					}
 				}
+			}
+		}
+	}
+	return nil
+}
+
+// SyncParallelCount propagates PodSets.Count into template-level Parallelism/Completions.
+func (j *JobSet) syncParallelCount(info *runtime.Info) error {
+	if info == nil {
+		return nil
+	}
+	jobSetSpec, ok := runtime.TemplateSpecApply[jobsetv1alpha2ac.JobSetSpecApplyConfiguration](info)
+	if !ok || jobSetSpec == nil {
+		return nil
+	}
+	for _, ps := range info.TemplateSpec.PodSets {
+		if ps.Count == nil {
+			continue
+		}
+		for rJobIdx := range jobSetSpec.ReplicatedJobs {
+			if jobSetSpec.ReplicatedJobs[rJobIdx].Name != nil && *jobSetSpec.ReplicatedJobs[rJobIdx].Name == ps.Name {
+				jobSetSpec.ReplicatedJobs[rJobIdx].Template.Spec.Parallelism = ps.Count
+				jobSetSpec.ReplicatedJobs[rJobIdx].Template.Spec.Completions = ps.Count
+				break
 			}
 		}
 	}
@@ -285,17 +395,13 @@ func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *traine
 	}
 
 	for psIdx, ps := range info.TemplateSpec.PodSets {
-		if ps.Count != nil {
-			jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Parallelism = ps.Count
-			jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Completions = ps.Count
-		}
 		apply.UpsertVolumes(&jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.Volumes, ps.Volumes...)
 		for containerIdx, container := range ps.Containers {
 			if len(container.Command) > 0 {
 				jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.Containers[containerIdx].Command = container.Command
 			}
 			if container.Image != "" {
-				jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.Containers[containerIdx].Image = &container.Image
+				jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.Containers[containerIdx].Image = ptr.To(container.Image)
 			}
 			apply.UpsertEnvVars(
 				&jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.Containers[containerIdx].Env,
@@ -313,13 +419,20 @@ func (j *JobSet) Build(ctx context.Context, info *runtime.Info, trainJob *traine
 		initContainers := jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.InitContainers
 		for containerIdx, container := range ps.InitContainers {
 			if containerIdx >= len(initContainers) {
-				return nil, fmt.Errorf("podSet %q initContainer %q does not have a matching initContainer in the runtime template", ps.Name, container.Name)
+				// Auto-append a new initContainer slot so plugins only need to
+				// write to the PodSet abstraction (PodSet → runtime.Container → JobSet).
+				jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.InitContainers = append(
+					jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.InitContainers,
+					*corev1ac.Container().WithName(container.Name),
+				)
+				// Refresh the local slice after append.
+				initContainers = jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.InitContainers
 			}
 			if len(container.Command) > 0 {
 				jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.InitContainers[containerIdx].Command = container.Command
 			}
 			if container.Image != "" {
-				jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.InitContainers[containerIdx].Image = &container.Image
+				jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.InitContainers[containerIdx].Image = ptr.To(container.Image)
 			}
 			apply.UpsertEnvVars(
 				&jobSetSpec.ReplicatedJobs[psIdx].Template.Spec.Template.Spec.InitContainers[containerIdx].Env,

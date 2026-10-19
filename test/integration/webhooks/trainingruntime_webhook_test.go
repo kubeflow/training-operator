@@ -222,6 +222,91 @@ var _ = ginkgo.Describe("TrainingRuntime marker validations and defaulting", gin
 				},
 				testingutil.BeInvalidError(),
 			),
+			ginkgo.Entry("Should fail to create trainingRuntime with mpi.numProcPerNode < 1",
+				func() *trainer.TrainingRuntime {
+					return testingutil.MakeTrainingRuntimeWrapper(ns.Name, "runtime").
+						RuntimeSpec(testingutil.MakeTrainingRuntimeSpecWrapper(
+							testingutil.MakeTrainingRuntimeWrapper(ns.Name, "runtime").Obj().Spec).
+							WithMLPolicy(
+								testingutil.MakeMLPolicyWrapper().
+									WithMLPolicySource(*testingutil.MakeMLPolicySourceWrapper().
+										MPIPolicy(ptr.To[int32](0), trainer.MPIImplementationOpenMPI, nil, nil).
+										Obj(),
+									).
+									Obj(),
+							).
+							Obj()).
+						Obj()
+				},
+				testingutil.BeInvalidError(),
+			),
+			ginkgo.Entry("Should fail to create trainingRuntime with a negative coscheduling timeout",
+				func() *trainer.TrainingRuntime {
+					baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, "runtime")
+					return baseRuntime.
+						RuntimeSpec(testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
+							PodGroupPolicyCoschedulingSchedulingTimeout(-1).
+							Obj()).
+						Obj()
+				},
+				testingutil.BeInvalidError(),
+			),
+			ginkgo.Entry("Should succeed to create trainingRuntime with a zero coscheduling timeout",
+				func() *trainer.TrainingRuntime {
+					baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, "runtime")
+					return baseRuntime.
+						RuntimeSpec(testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
+							PodGroupPolicyCoschedulingSchedulingTimeout(0).
+							Obj()).
+						Obj()
+				},
+				gomega.Succeed(),
+			),
+			ginkgo.Entry("Should succeed to create trainingRuntime with a positive coscheduling timeout",
+				func() *trainer.TrainingRuntime {
+					baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, "runtime")
+					return baseRuntime.
+						RuntimeSpec(testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
+							PodGroupPolicyCoschedulingSchedulingTimeout(60).
+							Obj()).
+						Obj()
+				},
+				gomega.Succeed(),
+			),
+			ginkgo.Entry("Should succeed to create trainingRuntime with only volcano podGroupPolicy",
+				func() *trainer.TrainingRuntime {
+					baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, "runtime")
+					return baseRuntime.
+						RuntimeSpec(testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
+							PodGroupPolicyVolcano(&trainer.VolcanoPodGroupPolicySource{}).
+							Obj()).
+						Obj()
+				},
+				gomega.Succeed(),
+			),
+			ginkgo.Entry("Should fail to create trainingRuntime with both coscheduling and volcano podGroupPolicy",
+				func() *trainer.TrainingRuntime {
+					baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, "runtime")
+					return baseRuntime.
+						RuntimeSpec(testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
+							PodGroupPolicyCoschedulingSchedulingTimeout(60).
+							PodGroupPolicyVolcano(&trainer.VolcanoPodGroupPolicySource{}).
+							Obj()).
+						Obj()
+				},
+				testingutil.BeInvalidError(),
+			),
+			ginkgo.Entry("Rejects creating a TrainingRuntime with a container resources.claim that does not exist in the pod resourceClaims",
+				func() *trainer.TrainingRuntime {
+					baseRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, "runtime")
+					return baseRuntime.
+						RuntimeSpec(testingutil.MakeTrainingRuntimeSpecWrapper(baseRuntime.Spec).
+							ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
+							Obj()).
+						Obj()
+				},
+				gomega.MatchError(gomega.ContainSubstring("references resourceClaim \"gpu\" which is not defined in the Pod's resourceClaims")),
+			),
 		)
 		ginkgo.DescribeTable("Defaulting TrainingRuntime on creation", func(trainingRuntime func() *trainer.TrainingRuntime, wantTrainingRuntime func() *trainer.TrainingRuntime) {
 			created := trainingRuntime()

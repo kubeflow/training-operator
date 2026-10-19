@@ -25,14 +25,18 @@ endif
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 REPO := github.com/kubeflow/trainer
 TRAINER_CHART_DIR := $(PROJECT_DIR)/charts/kubeflow-trainer
+# Year-less copyright header prepended to generated manifests (controller-gen
+# emits none). The shared verifier uses its own templates from kubeflow/testing.
+BOILERPLATE_HEADER := $(PROJECT_DIR)/hack/boilerplate/boilerplate.sh.txt
+HELM_BOILERPLATE_HEADER := $(PROJECT_DIR)/hack/boilerplate/boilerplate.helm.txt
 # Location to install tool binaries
 LOCALBIN ?= $(PROJECT_DIR)/bin
 
 # Tool versions
-K8S_VERSION ?= 1.35.0
+K8S_VERSION ?= 1.37.0
 GINKGO_VERSION ?= $(shell go list -m -f '{{.Version}}' github.com/onsi/ginkgo/v2)
 ENVTEST_VERSION ?= release-0.22
-CONTROLLER_GEN_VERSION ?= v0.18.0
+CONTROLLER_GEN_VERSION ?= v0.23.0
 KIND_VERSION ?= $(shell go list -m -f '{{.Version}}' sigs.k8s.io/kind)
 HELM_VERSION ?= v3.18.6
 HELM_UNITTEST_VERSION ?= 1.1.1
@@ -99,7 +103,7 @@ helm: ## Download helm locally if required.
 
 .PHONY: golangci-lint-install
 golangci-lint-install: ## Download golangci-lint locally if required.
-	@GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.1
+	@GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 
 .PHONY: golangci-lint-kal
 golangci-lint-kal: ## Build golangci-lint-kal from custom configuration.
@@ -164,12 +168,30 @@ volcano-crd: ## Copy the CRDs from Volcano repository to the manifests/external-
 # Instructions for code generation.
 .PHONY: manifests
 manifests: controller-gen ## Generate manifests.
-	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true" rbac:roleName=kubeflow-trainer-controller-manager webhook \
-		paths="./pkg/apis/trainer/v1alpha1/...;./pkg/controller/...;./pkg/runtime/...;./pkg/webhooks/...;./pkg/util/cert/..." \
+	$(CONTROLLER_GEN) "crd:generateEmbeddedObjectMeta=true,maxDescLen=128" rbac:roleName=kubeflow-trainer-controller-manager webhook \
+		paths="./pkg/apis/trainer/v1alpha1/...;./pkg/controller/...;./pkg/runtime/...;./pkg/webhooks/...;./pkg/util/cert/...;./pkg/metrics/..." \
 		output:crd:artifacts:config=manifests/base/crds \
 		output:rbac:artifacts:config=manifests/base/rbac \
 		output:webhook:artifacts:config=manifests/base/webhook
-	cp -f manifests/base/crds/trainer.kubeflow.org_*.yaml $(TRAINER_CHART_DIR)/crds/
+	@# controller-gen emits no license header. Prepend the year-less
+	@# boilerplate to each generated manifest. controller-gen rewrites these
+	@# files in full on every run, so prepending here once is idempotent.
+	@# Copy the header-free CRDs into the chart before adding the kustomize (#)
+	@# header, so the chart templates can use the Helm-style license block.
+	cp -f manifests/base/crds/trainer.kubeflow.org_*.yaml $(TRAINER_CHART_DIR)/templates/crd/
+	@for f in manifests/base/crds/trainer.kubeflow.org_*.yaml \
+			manifests/base/rbac/role.yaml \
+			manifests/base/webhook/manifests.yaml; do \
+		{ cat $(BOILERPLATE_HEADER); echo; cat "$$f"; } > "$$f.tmp" && mv "$$f.tmp" "$$f"; \
+	done
+	# Annotate the chart CRD templates with `helm.sh/resource-policy: keep` (toggled
+	# via `crds.keep`) so that `helm uninstall` does not delete the CRDs and, with
+	# them, every custom resource in the cluster. Then prepend the Helm license block
+	# and wrap the templates so installation can be toggled via `crds.enabled`.
+	for f in $(TRAINER_CHART_DIR)/templates/crd/trainer.kubeflow.org_*.yaml; do \
+		awk '{ print } /^  annotations:$$/ && !done { print "    {{- if .Values.crds.keep }}"; print "    helm.sh/resource-policy: keep"; print "    {{- end }}"; done = 1 }' $$f > $$f.tmp && mv $$f.tmp $$f; \
+		{ cat $(HELM_BOILERPLATE_HEADER); echo; echo '{{- if .Values.crds.enabled }}'; cat $$f; echo '{{- end }}'; } > $$f.tmp && mv $$f.tmp $$f; \
+	done
 
 .PHONY: generate
 generate: go-mod-download manifests helm-docs ## Generate APIs.
@@ -196,10 +218,6 @@ golangci-lint: golangci-lint-install golangci-lint-kal ## Run golangci-lint to v
 	$(GOLANGCI_LINT) run --timeout 5m $(LINT_PKG)
 	$(GOLANGCI_LINT_KAL) run -v --config $(PROJECT_DIR)/.golangci-kal.yml
 
-.PHONY: verify-boilerplate
-verify-boilerplate: ## Verify copyright boilerplate headers in source files.
-	python3 hack/boilerplate/boilerplate.py
-
 # Instructions to run tests.
 .PHONY: test
 test: ## Run Go unit test.
@@ -211,19 +229,18 @@ test-integration: ginkgo envtest jobset-operator-crd scheduler-plugins-crd volca
 
 .PHONY: test-python
 test-python: ## Run Python unit test.
-	pip install pytest
-	pip install -r ./cmd/initializers/dataset/requirements.txt
+	uv sync --locked --no-dev --directory ./cmd/initializers/dataset
+	uv sync --locked --no-dev --directory ./cmd/initializers/model
 
-	PYTHONPATH=$(PROJECT_DIR) pytest ./pkg/initializers/dataset
-	PYTHONPATH=$(PROJECT_DIR) pytest ./pkg/initializers/model
-	PYTHONPATH=$(PROJECT_DIR) pytest ./pkg/initializers/utils
+	PYTHONPATH=$(PROJECT_DIR) uv run --with pytest --directory ./cmd/initializers/dataset pytest $(PROJECT_DIR)/pkg/initializers/dataset
+	PYTHONPATH=$(PROJECT_DIR) uv run --with pytest --directory ./cmd/initializers/dataset pytest $(PROJECT_DIR)/pkg/initializers/model
+	PYTHONPATH=$(PROJECT_DIR) uv run --with pytest --directory ./cmd/initializers/dataset pytest $(PROJECT_DIR)/pkg/initializers/utils
 
 .PHONY: test-python-integration
 test-python-integration: ## Run Python integration test.
-	pip install pytest
-	pip install -r ./cmd/initializers/dataset/requirements.txt
+	uv sync --locked --no-dev --directory ./cmd/initializers/dataset
 
-	PYTHONPATH=$(PROJECT_DIR) pytest ./test/integration/initializers
+	PYTHONPATH=$(PROJECT_DIR) uv run --with pytest --directory ./cmd/initializers/dataset pytest $(PROJECT_DIR)/test/integration/initializers
 
 .PHONY: test-rust
 test-rust: ## Run Rust unit test.
@@ -304,34 +321,31 @@ release: ## Create a release commit. Usage: make release VERSION=vX.Y.Z [GITHUB_
 		MAJOR_MINOR=$$(echo "$(VERSION)" | $(SED) 's/^v//' | cut -d. -f1,2); \
 		CHANGELOG_PATH="CHANGELOG/CHANGELOG-$$MAJOR_MINOR.md"; \
 		RELEASE_BRANCH="release-$$MAJOR_MINOR"; \
-		RELEASE_SHA=$$(git rev-parse --verify --quiet "refs/remotes/upstream/$$RELEASE_BRANCH"); \
-		if [ -n "$$RELEASE_SHA" ]; then \
-			PREV_TAG=$$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*rc*' "$$RELEASE_SHA" 2>/dev/null || true); \
-			if [ -n "$$PREV_TAG" ]; then \
-				CLIFF_SCOPE="$$PREV_TAG..$$RELEASE_SHA"; \
-				echo "Generating changelog for $(VERSION) (range: $$PREV_TAG..$$RELEASE_BRANCH @ $$RELEASE_SHA)"; \
-			else \
-				CLIFF_SCOPE="--unreleased"; \
-				echo "Generating changelog for $(VERSION) (no prior tag on $$RELEASE_BRANCH; using --unreleased)"; \
+		RELEASE_SHA=$$(git rev-parse --verify --quiet "refs/remotes/upstream/$$RELEASE_BRANCH" || true); \
+		if [ -z "$$RELEASE_SHA" ]; then \
+			if [ -f "$$CHANGELOG_PATH" ]; then \
+				echo "Error: branch $$RELEASE_BRANCH not found on upstream, but $$CHANGELOG_PATH exists. Run: git fetch upstream $$RELEASE_BRANCH"; \
+				exit 1; \
 			fi; \
-		elif [ ! -f "$$CHANGELOG_PATH" ]; then \
-			CLIFF_SCOPE="--unreleased"; \
-			echo "Generating changelog for $(VERSION) (new release line $$MAJOR_MINOR, branch $$RELEASE_BRANCH not created yet; using --unreleased)"; \
+			RELEASE_SHA=$$(git rev-parse HEAD); \
+			echo "Branch $$RELEASE_BRANCH does not exist yet (new release line $$MAJOR_MINOR, created by the release workflow); using HEAD"; \
+		fi; \
+		PATCH=$$(echo "$(VERSION)" | cut -d. -f3); \
+		if [ "$$PATCH" -gt 0 ]; then \
+			PREV_TAG="$$(echo "$(VERSION)" | cut -d. -f1,2).$$((PATCH - 1))"; \
 		else \
-			echo "Error: branch $$RELEASE_BRANCH not found locally or on upstream, but $$CHANGELOG_PATH exists. Run: git fetch upstream $$RELEASE_BRANCH"; \
+			PREV_MINOR=$$(( $$(echo "$(VERSION)" | cut -d. -f2) - 1 )); \
+			PREV_TAG=$$(git tag --list "$$(echo "$(VERSION)" | cut -d. -f1).$$PREV_MINOR.*" | grep -vE -- '(rc)' | sort -t. -k3,3nr | head -1 || true); \
+		fi; \
+		if [ -z "$$PREV_TAG" ]; then \
+			echo "Error: cannot determine the previous release tag for $(VERSION)"; \
 			exit 1; \
 		fi; \
-		CLIFF_CMD="docker run --rm -u $$(id -u):$$(id -g) -v $(PROJECT_DIR):/app"; \
-		if [ -n "$(GITHUB_TOKEN)" ]; then \
-			CLIFF_CMD="$$CLIFF_CMD -e GITHUB_TOKEN=$(GITHUB_TOKEN)"; \
-		fi; \
-		CLIFF_CMD="$$CLIFF_CMD -w /app ghcr.io/orhun/git-cliff/git-cliff:latest $$CLIFF_SCOPE --tag $(VERSION)"; \
-		if [ -f "$$CHANGELOG_PATH" ]; then \
-			$$CLIFF_CMD --prepend "$$CHANGELOG_PATH"; \
-		else \
-			$$CLIFF_CMD -o "$$CHANGELOG_PATH"; \
-			printf '%s\n' "$$(cat "$$CHANGELOG_PATH")" > "$$CHANGELOG_PATH"; \
-		fi; \
+		echo "Generating changelog for $(VERSION) (range: $$PREV_TAG..$$RELEASE_SHA)"; \
+		touch "$$CHANGELOG_PATH"; \
+		docker run --rm -u $$(id -u):$$(id -g) -e HOME=/tmp -e GITHUB_TOKEN \
+			-v $(PROJECT_DIR):/app -w /app ghcr.io/orhun/git-cliff/git-cliff:latest \
+			"$$PREV_TAG..$$RELEASE_SHA" --tag $(VERSION) --prepend "$$CHANGELOG_PATH"; \
 		echo "Changelog generated at $$CHANGELOG_PATH"; \
 	fi
 	@echo "Regenerating files for $(VERSION)"

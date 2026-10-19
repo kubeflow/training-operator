@@ -1,5 +1,5 @@
 {{- /*
-Copyright 2026 The Kubeflow authors.
+Copyright 2026 The Kubeflow Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,81 +31,69 @@ This chart bootstraps a [Kubernetes Trainer]({{template "chart.homepage" . }}) d
 ## Prerequisites
 
 - Helm >= 3
-- Kubernetes >= 1.29
+- Kubernetes >= 1.31
 
 ## Usage
 
 ### Install the Helm Chart
 
-Install the released version (e.g. 2.1.0):
+Install the released version:
 
 ```bash
-helm install kubeflow-trainer oci://ghcr.io/kubeflow/charts/kubeflow-trainer --version 2.1.0
+export VERSION=v2.1.0
+helm install kubeflow-trainer oci://ghcr.io/kubeflow/charts/kubeflow-trainer \
+    --namespace kubeflow-system \
+    --create-namespace \
+    --version ${VERSION#v}
 ```
 
-Alternatively, you can install the latest version from the master branch (e.g. `bfccb7b` commit):
+For the latest changes run
+([where `48e7a93`](https://github.com/kubeflow/trainer/commit/48e7a93) is the desired commit):
 
 ```bash
-helm install kubeflow-trainer oci://ghcr.io/kubeflow/charts/kubeflow-trainer --version 0.0.0-sha-bfccb7b
+helm install kubeflow-trainer oci://ghcr.io/kubeflow/charts/kubeflow-trainer \
+    --namespace kubeflow-system \
+    --create-namespace \
+    --version 0.0.0-sha-48e7a93
 ```
+
+> [!NOTE]
+> The Trainer CRDs (`TrainJob`, `TrainingRuntime`, `ClusterTrainingRuntime`) are installed by the chart by default.
+> If you manage the CRDs out-of-band (previously via Helm's `--skip-crds` flag), set `--set crds.enabled=false` to skip
+> installing them with the chart.
+
+> [!NOTE]
+> Setting `dataCache.enabled=true` also installs LeaderWorkerSet as a chart dependency.
+> If LeaderWorkerSet is already installed in the cluster, add `--set dataCache.lws.install=false`.
 
 ### Install with ClusterTrainingRuntimes
 
-You can optionally deploy ClusterTrainingRuntimes as part of the Helm installation. Runtimes are disabled by default to keep the chart lightweight.
-
-To enable all default runtimes (torch, deepspeed, mlx, torchtune):
-
-```bash
-helm install kubeflow-trainer oci://ghcr.io/kubeflow/charts/kubeflow-trainer \
-  --version 2.1.0 \
-  --set runtimes.defaultEnabled=true
-```
-
-To enable specific runtimes:
+You can enable the default ClusterTrainingRuntimes together with the control plane in a single
+step. A post-install Helm hook applies the runtimes once the CRDs and controller are ready:
 
 ```bash
 helm install kubeflow-trainer oci://ghcr.io/kubeflow/charts/kubeflow-trainer \
-  --version 2.1.0 \
-  --set runtimes.torchDistributed.enabled=true \
-  --set runtimes.deepspeedDistributed.enabled=true
+    --namespace kubeflow-system \
+    --create-namespace \
+    --version ${VERSION#v} \
+    --set runtimes.defaultEnabled=true
 ```
 
-Or use a custom values file:
-
-```yaml
-# values.yaml
-runtimes:
-  torchDistributed:
-    enabled: true
-  deepspeedDistributed:
-    enabled: true
-  mlxDistributed:
-    enabled: true
-
-# For torch-distributed-with-cache, enable both dataCache.enabled and dataCache.runtimes.torchDistributed.enabled
-dataCache:
-  enabled: true
-  cacheImage:
-    tag: "v2.0.0"
-  runtimes:
-    torchDistributedWithCache:
-      enabled: true
-```
-
-Then install with:
+To enable specific runtimes instead of all of them:
 
 ```bash
 helm install kubeflow-trainer oci://ghcr.io/kubeflow/charts/kubeflow-trainer \
-  --version 2.1.0 \
-  -f values.yaml
+    --namespace kubeflow-system \
+    --create-namespace \
+    --version ${VERSION#v} \
+    --set runtimes.torchDistributed.enabled=true \
+    --set runtimes.deepspeedDistributed.enabled=true
 ```
 
-### Available Runtimes
-
-- **torch-distributed**: PyTorch distributed training (no custom images)
-- **torch-distributed-with-cache**: PyTorch with distributed data cache support (requires `dataCache.enabled=true`)
-- **deepspeed-distributed**: DeepSpeed distributed training with MPI
-- **mlx-distributed**: MLX distributed training with MPI
+You can also enable runtimes on an existing installation with `helm upgrade` using the same
+`--set` flags. The hook reconciles runtimes on every upgrade: newly enabled runtimes are applied
+and disabled ones are removed. Disabling *all* runtimes removes the installer itself, so in that
+case delete any remaining runtimes manually or with `helm uninstall`.
 
 ### Uninstall the chart
 
@@ -114,6 +102,19 @@ helm uninstall [RELEASE_NAME]
 ```
 
 This removes all the Kubernetes resources associated with the chart and deletes the release, except for the `crds`, those will have to be removed manually.
+The CRDs are kept through the `helm.sh/resource-policy: keep` annotation (`crds.keep`, enabled by default), because deleting
+them would also delete every TrainJob and runtime in the cluster. To remove them with the release instead, set `crds.keep=false`
+on the release (for example with `helm upgrade --reuse-values --set crds.keep=false`) before uninstalling.
+
+Reinstalling the chart with the same release name and namespace adopts the kept CRDs, so they do not have to be removed first.
+Installing it under a different release name or namespace fails Helm's ownership check on the kept CRDs; either pass
+`--take-ownership` to `helm install` (Helm 3.17+), or point the CRDs at the new release before installing:
+
+```shell
+kubectl annotate crd trainjobs.trainer.kubeflow.org trainingruntimes.trainer.kubeflow.org \
+  clustertrainingruntimes.trainer.kubeflow.org optimizationjobs.trainer.kubeflow.org \
+  meta.helm.sh/release-name=[RELEASE_NAME] meta.helm.sh/release-namespace=[NAMESPACE] --overwrite
+```
 
 See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall) for command documentation.
 
