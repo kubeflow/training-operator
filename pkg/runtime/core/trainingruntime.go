@@ -112,7 +112,10 @@ func (r *TrainingRuntime) NewObjects(ctx context.Context, trainJob *trainer.Trai
 }
 
 // DeleteObjects returns the previously materialized objects that should now be removed
-// for the TrainJob. If the referenced TrainingRuntime can no longer be resolved (it was
+// for the TrainJob. It runs on every TrainJob reconcile and does not react to changes of
+// the runtime itself: the runtime is only read to build the Info object, and each
+// ComponentDeleterPlugin decides from the TrainJob state whether anything is returned.
+// If the referenced TrainingRuntime can no longer be resolved (it was
 // deleted after the TrainJob finished) or its snapshot is invalid, there is no
 // PodGroupPolicy left to check plugins against, so it logs and returns no objects: this
 // path also runs for finished TrainJobs, where retrying cannot help and would only keep
