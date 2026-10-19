@@ -36,12 +36,12 @@ import (
 	clocktesting "k8s.io/utils/clock/testing"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	volcanov1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/constants"
 	"github.com/kubeflow/trainer/v2/pkg/features"
 	runtimecore "github.com/kubeflow/trainer/v2/pkg/runtime/core"
+	jobsetplgconsts "github.com/kubeflow/trainer/v2/pkg/runtime/framework/plugins/jobset/constants"
 	testingutil "github.com/kubeflow/trainer/v2/pkg/util/testing"
 )
 
@@ -346,16 +346,53 @@ func TestValidateCreate(t *testing.T) {
 	patchForUnknownInitContainer := runtimePatch(constants.Node, trainer.PodSpecPatch{
 		InitContainers: []trainer.ContainerPatch{{Name: constants.Node}},
 	})
-	patchWithEmptyVolcanoQueue := []trainer.RuntimePatch{{
-		Manager: "test.io/manager",
-		TrainingRuntimeSpec: &trainer.TrainingRuntimeSpecPatch{
-			Template: &trainer.JobSetTemplatePatch{
-				Metadata: &metav1.ObjectMeta{
-					Annotations: map[string]string{volcanov1beta1.QueueNameAnnotationKey: ""},
-				},
+	patchForInitializerVolumeMount := runtimePatch(constants.DatasetInitializer, trainer.PodSpecPatch{
+		Containers: []trainer.ContainerPatch{{
+			Name: constants.DatasetInitializer,
+			VolumeMounts: []corev1.VolumeMount{{
+				Name:      jobsetplgconsts.VolumeNameInitializer,
+				MountPath: constants.DatasetMountPath,
+			}},
+		}},
+	})
+	patchForContainerClaimWithoutPodClaim := runtimePatch(constants.Node, trainer.PodSpecPatch{
+		Containers: []trainer.ContainerPatch{{
+			Name: constants.Node,
+			Resources: &corev1.ResourceRequirements{
+				Claims: []corev1.ResourceClaim{{Name: "gpu"}},
 			},
+		}},
+	})
+	runtimeSpecWithoutInitializerVolumeMount := func() trainer.TrainingRuntimeSpec {
+		spec := testingutil.MakeJobSetWrapper("", "").Obj().Spec
+		for i, rJob := range spec.ReplicatedJobs {
+			if rJob.Name != constants.DatasetInitializer {
+				continue
+			}
+			for k := range rJob.Template.Spec.Template.Spec.Containers {
+				spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[k].VolumeMounts = nil
+			}
+		}
+		return trainer.TrainingRuntimeSpec{Template: trainer.JobSetTemplateSpec{Spec: spec}}
+	}
+	trainJobWithDatasetInitializer := func(runtimeKind string) *trainer.TrainJob {
+		return testingutil.MakeTrainJobWrapper("default", "valid-job-name").
+			RuntimeRef(trainer.SchemeGroupVersion.WithKind(runtimeKind), "test-runtime").
+			Initializer(
+				testingutil.MakeTrainJobInitializerWrapper().
+					DatasetInitializer(testingutil.MakeTrainJobDatasetInitializerWrapper().StorageUri("hf://dataset").Obj()).
+					Obj(),
+			).
+			RuntimePatches(patchForInitializerVolumeMount).
+			Obj()
+	}
+	danglingContainerClaimError := field.ErrorList{
+		&field.Error{
+			Type:     field.ErrorTypeInvalid,
+			Field:    "spec.runtimePatches",
+			BadValue: "gpu",
 		},
-	}}
+	}
 	cases := map[string]struct {
 		obj                    *trainer.TrainJob
 		clusterTrainingRuntime *trainer.ClusterTrainingRuntime
@@ -472,29 +509,38 @@ func TestValidateCreate(t *testing.T) {
 				},
 			},
 		},
-		"runtimePatches set an empty Volcano queue name": {
+		"runtimePatches add the initializer volumeMount that the ClusterTrainingRuntime lacks": {
+			obj: trainJobWithDatasetInitializer(trainer.ClusterTrainingRuntimeKind),
+			clusterTrainingRuntime: testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").
+				RuntimeSpec(runtimeSpecWithoutInitializerVolumeMount()).Obj(),
+		},
+		"runtimePatches add the initializer volumeMount that the TrainingRuntime lacks": {
+			obj: trainJobWithDatasetInitializer(trainer.TrainingRuntimeKind),
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").
+				RuntimeSpec(runtimeSpecWithoutInitializerVolumeMount()).Obj(),
+		},
+		"runtimePatches add a container claim without a Pod claim to a ClusterTrainingRuntime": {
 			obj: testingutil.MakeTrainJobWrapper("default", "valid-job-name").
 				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.ClusterTrainingRuntimeKind), "test-runtime").
-				RuntimePatches(patchWithEmptyVolcanoQueue).
+				RuntimePatches(patchForContainerClaimWithoutPodClaim).
 				Obj(),
 			clusterTrainingRuntime: testingutil.MakeClusterTrainingRuntimeWrapper("test-runtime").
 				RuntimeSpec(trainer.TrainingRuntimeSpec{
 					Template: trainer.JobSetTemplateSpec{
 						Spec: testingutil.MakeJobSetWrapper("", "").Obj().Spec,
 					},
-					PodGroupPolicy: &trainer.PodGroupPolicy{
-						PodGroupPolicySource: trainer.PodGroupPolicySource{
-							Volcano: &trainer.VolcanoPodGroupPolicySource{},
-						},
-					},
 				}).Obj(),
-			wantError: field.ErrorList{
-				&field.Error{
-					Type:     field.ErrorTypeInvalid,
-					Field:    "spec.annotations[" + volcanov1beta1.QueueNameAnnotationKey + "]",
-					BadValue: "",
-				},
-			},
+			wantError:          danglingContainerClaimError,
+			enableFeatureGates: []featuregate.Feature{features.TrainJobDynamicResourceAllocation},
+		},
+		"runtimePatches add a container claim without a Pod claim to a TrainingRuntime": {
+			obj: testingutil.MakeTrainJobWrapper("default", "valid-job-name").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				RuntimePatches(patchForContainerClaimWithoutPodClaim).
+				Obj(),
+			trainingRuntime:    testingutil.MakeTrainingRuntimeWrapper("default", "test-runtime").Obj(),
+			wantError:          danglingContainerClaimError,
+			enableFeatureGates: []featuregate.Feature{features.TrainJobDynamicResourceAllocation},
 		},
 		"deprecated runtime referenced": {
 			obj: testingutil.MakeTrainJobWrapper("default", "valid-job-name").
