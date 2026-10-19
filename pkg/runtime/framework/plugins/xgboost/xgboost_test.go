@@ -317,7 +317,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
 				runtime.WithTemplateSpecObjApply(
-					utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{"example.com/gpu": resource.MustParse("2")}),
+					utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{"example.com/gpu": resource.MustParse("2")}),
 				),
 			),
 			trainJob: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").Obj(),
@@ -364,7 +364,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 							},
 						}},
 					}},
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{"example.com/gpu": resource.MustParse("2")}),
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{"example.com/gpu": resource.MustParse("2")}),
 				},
 				Scheduler: &runtime.Scheduler{PodLabels: make(map[string]string)},
 			},
@@ -516,7 +516,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU:    resource.MustParse("8"),
 					corev1.ResourceMemory: resource.MustParse("32Gi"),
 					"example.com/gpu":     resource.MustParse("4"),
@@ -543,7 +543,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU:    resource.MustParse("8"),
 						corev1.ResourceMemory: resource.MustParse("32Gi"),
 						"example.com/gpu":     resource.MustParse("4"),
@@ -733,7 +733,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					"example.com/gpu": resource.MustParse("2"),
 				})),
 			),
@@ -786,7 +786,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 							},
 						}},
 					}},
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						"example.com/gpu": resource.MustParse("2"),
 					}),
 				},
@@ -806,7 +806,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					"example.com/gpu": resource.MustParse("4"),
 				})),
 			),
@@ -829,7 +829,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						"example.com/gpu": resource.MustParse("4"),
 					}),
 					PodSets: []runtime.PodSet{{
@@ -883,7 +883,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					"example.com/gpu": resource.MustParse("3"),
 				})),
 			),
@@ -940,7 +940,7 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 							},
 						}},
 					}},
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						"example.com/gpu": resource.MustParse("3"),
 					}),
 				},

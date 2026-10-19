@@ -728,7 +728,7 @@ func TestGenerateFluxEntrypoint(t *testing.T) {
 					WithMLPolicySource(*utiltesting.MakeMLPolicySourceWrapper().FluxPolicy(ptr.To[int32](1)).Obj()).
 					Obj(),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(tc.nodeResources)),
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(tc.nodeResources)),
 			)
 			// The TrainJob overrides memory only, so the GPUs can come from the Runtime alone.
 			trainJob := utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "flux-job").

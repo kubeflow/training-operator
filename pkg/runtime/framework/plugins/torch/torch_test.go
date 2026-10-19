@@ -346,7 +346,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("4"),
 				})),
 			),
@@ -359,7 +359,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("4"),
 					}),
 					PodSets: []runtime.PodSet{{
@@ -498,7 +498,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("2"),
 				})),
 			),
@@ -511,7 +511,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("2"),
 					}),
 					PodSets: []runtime.PodSet{{
@@ -578,7 +578,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("3"),
 				})),
 			),
@@ -591,7 +591,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("3"),
 					}),
 					PodSets: []runtime.PodSet{{
@@ -658,7 +658,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("2.5"),
 				})),
 			),
@@ -671,7 +671,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("2.5"),
 					}),
 					PodSets: []runtime.PodSet{{
@@ -812,7 +812,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					"example.com/gpu": resource.MustParse("2"),
 				})),
 			),
@@ -825,7 +825,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						"example.com/gpu": resource.MustParse("2"),
 					}),
 					PodSets: []runtime.PodSet{{
@@ -967,7 +967,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("2500m"),
 				})),
 			),
@@ -980,7 +980,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("2500m"),
 					}),
 					PodSets: []runtime.PodSet{{
@@ -1047,7 +1047,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("4"),
 				})),
 			),
@@ -1060,7 +1060,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("4"),
 					}),
 					PodSets: []runtime.PodSet{{
@@ -1128,7 +1128,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("6"),
 					"example.com/gpu":  resource.MustParse("2"),
 				})),
@@ -1142,7 +1142,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("6"),
 						"example.com/gpu":  resource.MustParse("2"),
 					}),
@@ -1210,7 +1210,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("6"),
 					"example.com/gpu":  resource.MustParse("2"),
 				})),
@@ -1224,7 +1224,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("6"),
 						"example.com/gpu":  resource.MustParse("2"),
 					}),
@@ -1292,7 +1292,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("3.7"),
 				})),
 			),
@@ -1305,7 +1305,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("3.7"),
 					}),
 					PodSets: []runtime.PodSet{{
@@ -1379,7 +1379,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 2, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU:    resource.MustParse("8"),
 					corev1.ResourceMemory: resource.MustParse("16Gi"),
 					"example.com/gpu":     resource.MustParse("4"),
@@ -1397,7 +1397,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU:    resource.MustParse("8"),
 						corev1.ResourceMemory: resource.MustParse("16Gi"),
 						"example.com/gpu":     resource.MustParse("4"),
@@ -1483,7 +1483,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
 					WithContainers(corev1ac.Container().WithName(constants.Node)),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU:    resource.MustParse("8"),
 					corev1.ResourceMemory: resource.MustParse("16Gi"),
 					"example.com/gpu":     resource.MustParse("4"),
@@ -1498,7 +1498,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU:    resource.MustParse("8"),
 						corev1.ResourceMemory: resource.MustParse("16Gi"),
 						"example.com/gpu":     resource.MustParse("4"),
@@ -1944,7 +1944,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						corev1ac.Container().WithName(constants.Node),
 					),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("8"),
 					"example.com/gpu":  resource.MustParse("4"),
 				})),
@@ -1985,7 +1985,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				},
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("8"),
 						"example.com/gpu":  resource.MustParse("4"),
 					}),
@@ -2836,7 +2836,7 @@ func TestTorchValidate(t *testing.T) {
 					).
 					Obj(),
 				),
-				runtime.WithTemplateSpecObjApply(utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+				runtime.WithTemplateSpecObjApply(utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 					"example.com/gpu": resource.MustParse("1"),
 				})),
 			),

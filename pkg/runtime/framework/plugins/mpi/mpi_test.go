@@ -377,7 +377,7 @@ trainJob-node-1-1.trainJob slots=1
 				Labels:      make(map[string]string),
 				Annotations: make(map[string]string),
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						"custom.com/gpu": resource.MustParse("5"),
 					}),
 					PodSets: []runtime.PodSet{
@@ -421,7 +421,7 @@ trainJob-node-1-1.trainJob slots=1
 				Labels:      make(map[string]string),
 				Annotations: make(map[string]string),
 				TemplateSpec: runtime.TemplateSpec{
-					ObjApply: utiltesting.MakeJobSetSpecApplyWithNodeResources(corev1.ResourceList{
+					ObjApply: utiltesting.JobSetSpecApplyWithNodeResources(corev1.ResourceList{
 						"custom.com/gpu": resource.MustParse("5"),
 					}),
 					PodSets: []runtime.PodSet{
