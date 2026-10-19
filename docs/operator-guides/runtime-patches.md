@@ -171,6 +171,36 @@ runtime modifications that could cause inconsistency between running Pods and th
 
 ## Common Use Cases
 
+### Custom Scheduler
+
+Override `schedulerName` for the training Pods without creating a separate runtime:
+
+```yaml
+spec:
+  runtimePatches:
+    - manager: example.com/training-platform
+      trainingRuntimeSpec:
+        template:
+          spec:
+            replicatedJobs:
+              - name: node
+                template:
+                  spec:
+                    template:
+                      spec:
+                        schedulerName: volcano
+```
+
+The scheduler name must be a non-empty DNS subdomain of at most 253 characters.
+If omitted, the runtime's scheduler configuration is preserved. Only the named
+ReplicatedJob is patched; initializer and other jobs keep their existing configuration.
+The selected scheduler must be installed and configured in the cluster.
+
+Changing `schedulerName` selects the scheduler; it does not enable gang scheduling
+or configure a queue. Configure the scheduler's grouping and queue integration separately;
+for example, see the [Volcano guide](job-scheduling/volcano).
+Updates follow the existing [RuntimePatches mutability constraints](#mutability-constraints).
+
 ### Custom Service Account and Node Selection
 
 Override the service account and pin training Pods to specific GPU nodes:
