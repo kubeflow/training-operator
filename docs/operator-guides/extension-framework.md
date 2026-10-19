@@ -76,7 +76,7 @@ In each phase, there are two types of components:
 
 ### 4. Deleter Phase
 
-**Purpose**: Removes resources that a plugin determines are no longer needed for the TrainJob, such as a gang-scheduling `PodGroup` once the TrainJob is finished or suspended.
+**Purpose**: Removes resources that a plugin determines are no longer needed for the TrainJob, such as a gang-scheduling `PodGroup` once the TrainJob is finished or suspended. The Build Phase only applies resources, so a dedicated phase keeps the lifecycle clear: removing a resource because of the TrainJob's state is not mixed into the code that builds it.
 
 - **Internal API**:
   - **TrainJobController**: Deletes the resources identified by the `ComponentDeleter` extension point.
