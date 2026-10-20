@@ -47,8 +47,6 @@ const (
 	xgboostRuntime   = "xgboost-distributed"
 	fluxRuntime      = "flux-distributed"
 
-	// openMPI4Image is the Open MPI 4.1 example image published by kubeflow/mpi-operator.
-	// It has the same mpiuser and sshd layout as the DeepSpeed runtime image.
 	openMPI4Image = "mpioperator/mpi-pi:v0.6.0-openmpi@sha256:ed7ece27c8e909fa96664d09f920781a399c7ae7074c2460b18775fa4262c6a8"
 )
 
