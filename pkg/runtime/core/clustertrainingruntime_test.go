@@ -253,7 +253,7 @@ func TestClusterTrainingRuntimeDeleteObjects(t *testing.T) {
 			t.Cleanup(cancel)
 
 			// The runtime is deliberately not created: DeleteObjects must not need it.
-			clientBuilder := testingutil.NewClientBuilder()
+			clientBuilder := testingutil.WithVolcanoPodGroupRESTMapping(testingutil.NewClientBuilder())
 			if tc.podGroup != nil {
 				clientBuilder.WithObjects(tc.podGroup)
 			}

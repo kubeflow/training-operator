@@ -2440,7 +2440,7 @@ func TestRunComponentDeleterPlugins(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			clientBuilder := testingutil.NewClientBuilder().WithObjects(tc.objs...)
+			clientBuilder := testingutil.WithVolcanoPodGroupRESTMapping(testingutil.NewClientBuilder().WithObjects(tc.objs...))
 			if tc.withError {
 				clientBuilder.WithInterceptorFuncs(interceptor.Funcs{
 					Get: func(ctx context.Context, cli client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {

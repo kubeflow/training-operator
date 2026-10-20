@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	batchv1ac "k8s.io/client-go/applyconfigurations/batch/v1"
@@ -533,7 +534,10 @@ func TestVolcanoDelete(t *testing.T) {
 		objs          []client.Object
 		withError     bool
 		withNoKindErr bool
-		wantObjs      []client.Object
+		// crdNotInstalled builds a client whose REST mapper does not know the PodGroup kind,
+		// as on a cluster without Volcano.
+		crdNotInstalled bool
+		wantObjs        []client.Object
 	}{
 		"nil trainjob": {
 			trainJob: nil,
@@ -595,11 +599,17 @@ func TestVolcanoDelete(t *testing.T) {
 			withError: true,
 			wantObjs:  nil,
 		},
-		"Volcano CRD not installed is tolerated like NotFound": {
+		"Volcano CRD removed after startup is tolerated like NotFound": {
 			trainJob:      failedTrainJob,
 			objs:          []client.Object{ownedPodGroup},
 			withNoKindErr: true,
 			wantObjs:      nil,
+		},
+		"Volcano CRD not installed makes no API call": {
+			trainJob:        failedTrainJob,
+			objs:            []client.Object{ownedPodGroup},
+			crdNotInstalled: true,
+			wantObjs:        nil,
 		},
 	}
 
@@ -610,7 +620,19 @@ func TestVolcanoDelete(t *testing.T) {
 			t.Cleanup(cancel)
 
 			clientBuilder := utiltesting.NewClientBuilder().WithObjects(c.objs...)
+			if !c.crdNotInstalled {
+				utiltesting.WithVolcanoPodGroupRESTMapping(clientBuilder)
+			}
 			switch {
+			case c.crdNotInstalled:
+				clientBuilder.WithInterceptorFuncs(interceptor.Funcs{
+					Get: func(ctx context.Context, cli client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+						if _, ok := obj.(*volcanov1beta1.PodGroup); ok {
+							t.Errorf("Unexpected PodGroup Get on a cluster without the Volcano CRD")
+						}
+						return cli.Get(ctx, key, obj, opts...)
+					},
+				})
 			case c.withError:
 				clientBuilder.WithInterceptorFuncs(interceptor.Funcs{
 					Get: func(ctx context.Context, cli client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
@@ -643,6 +665,61 @@ func TestVolcanoDelete(t *testing.T) {
 				cmpopts.IgnoreFields(metav1.ObjectMeta{}, "ResourceVersion"),
 			); len(diff) != 0 {
 				t.Errorf("Unexpected objects from Delete (-want, +got): %s", diff)
+			}
+		})
+	}
+}
+
+// countingRESTMapper counts RESTMapping lookups.
+type countingRESTMapper struct {
+	apimeta.RESTMapper
+	calls int
+}
+
+func (m *countingRESTMapper) RESTMapping(gk schema.GroupKind, versions ...string) (*apimeta.RESTMapping, error) {
+	m.calls++
+	return m.RESTMapper.RESTMapping(gk, versions...)
+}
+
+func TestVolcanoPodGroupCRDInstalled(t *testing.T) {
+	cases := map[string]struct {
+		withPodGroupMapping bool
+		want                bool
+	}{
+		"PodGroup kind known to the REST mapper": {
+			withPodGroupMapping: true,
+			want:                true,
+		},
+		"PodGroup kind unknown to the REST mapper": {
+			want: false,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, ctx := ktesting.NewTestContext(t)
+			ctx, cancel := context.WithCancel(ctx)
+			t.Cleanup(cancel)
+
+			clientBuilder := utiltesting.NewClientBuilder()
+			if tc.withPodGroupMapping {
+				utiltesting.WithVolcanoPodGroupRESTMapping(clientBuilder)
+			}
+			plugin, err := New(ctx, clientBuilder.Build(), utiltesting.AsIndex(clientBuilder), nil)
+			if err != nil {
+				t.Fatalf("Failed to create plugin: %v", err)
+			}
+			v := plugin.(*Volcano)
+			counter := &countingRESTMapper{RESTMapper: v.restMapper}
+			v.restMapper = counter
+
+			// The result is computed once and reused, even across many reconciles.
+			for range 5 {
+				if got := v.podGroupCRDInstalled(); got != tc.want {
+					t.Errorf("podGroupCRDInstalled() = %v, want %v", got, tc.want)
+				}
+			}
+			if counter.calls != 1 {
+				t.Errorf("REST mapper was consulted %d times, want 1", counter.calls)
 			}
 		})
 	}

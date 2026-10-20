@@ -19,6 +19,7 @@ package volcano
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -53,6 +54,10 @@ type Volcano struct {
 	restMapper meta.RESTMapper
 	scheme     *apiruntime.Scheme
 	logger     logr.Logger
+	// podGroupCRDInstalled reports whether the Volcano PodGroup CRD is installed. It is
+	// evaluated once, so the CRD must be installed before the controller starts, as for
+	// the PodGroup watch in ReconcilerBuilders.
+	podGroupCRDInstalled func() bool
 }
 
 var _ framework.EnforcePodGroupPolicyPlugin = (*Volcano)(nil)
@@ -66,11 +71,19 @@ const Name = "Volcano"
 // +kubebuilder:rbac:groups=scheduling.k8s.io,resources=priorityclasses,verbs=get;list;watch
 
 func New(_ context.Context, client client.Client, _ client.FieldIndexer, _ *configapi.Configuration) (framework.Plugin, error) {
-	return &Volcano{
+	v := &Volcano{
 		client:     client,
 		restMapper: client.RESTMapper(),
 		scheme:     client.Scheme(),
-	}, nil
+	}
+	v.podGroupCRDInstalled = sync.OnceValue(func() bool {
+		_, err := v.restMapper.RESTMapping(
+			schema.GroupKind{Group: volcanov1beta1.SchemeGroupVersion.Group, Kind: "PodGroup"},
+			volcanov1beta1.SchemeGroupVersion.Version,
+		)
+		return err == nil
+	})
+	return v, nil
 }
 
 func (v *Volcano) Name() string {
@@ -212,7 +225,8 @@ func (v *Volcano) Build(ctx context.Context, info *runtime.Info, trainJob *train
 // is currently suspended. A suspended TrainJob runs no Pods, so its PodGroup would
 // otherwise keep reserving `minResources` capacity in the Volcano queue indefinitely.
 func (v *Volcano) Delete(ctx context.Context, trainJob *trainer.TrainJob) ([]client.Object, error) {
-	if trainJob == nil || !shouldDeletePodGroup(trainJob) {
+	// Skip clusters without Volcano, so finished or suspended TrainJobs cost no API call there.
+	if trainJob == nil || !shouldDeletePodGroup(trainJob) || !v.podGroupCRDInstalled() {
 		return nil, nil
 	}
 
