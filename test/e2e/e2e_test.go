@@ -46,6 +46,10 @@ const (
 	jaxRuntime       = "jax-distributed"
 	xgboostRuntime   = "xgboost-distributed"
 	fluxRuntime      = "flux-distributed"
+
+	// openMPI4Image is the Open MPI 4.1 example image published by kubeflow/mpi-operator.
+	// It has the same mpiuser and sshd layout as the DeepSpeed runtime image.
+	openMPI4Image = "mpioperator/mpi-pi:v0.6.0-openmpi@sha256:ed7ece27c8e909fa96664d09f920781a399c7ae7074c2460b18775fa4262c6a8"
 )
 
 //go:embed testdata/status_update.py
@@ -149,6 +153,76 @@ var _ = ginkgo.Describe("TrainJob e2e", func() {
 				Obj()
 
 			ginkgo.By("Create a TrainJob with deepspeed-distributed runtime reference", func() {
+				gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
+			})
+
+			// Wait for jobs to become active
+			ginkgo.By("Wait for TrainJob jobs to become active", func() {
+				gomega.Eventually(func(g gomega.Gomega) {
+					gotTrainJob := &trainer.TrainJob{}
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(trainJob), gotTrainJob)).Should(gomega.Succeed())
+					nodeStatus, ok := jobStatusByName(gotTrainJob.Status.JobsStatus, constants.Node)
+					g.Expect(ok).Should(gomega.BeTrue())
+					g.Expect(nodeStatus.Active).Should(gomega.Equal(ptr.To(int32(1))))
+					g.Expect(nodeStatus.Failed).Should(gomega.Equal(ptr.To(int32(0))))
+				}, util.TimeoutE2E, util.Interval).Should(gomega.Succeed())
+			})
+
+			// Wait for TrainJob to be in Succeeded status.
+			ginkgo.By("Wait for TrainJob to be in Succeeded status", func() {
+				gomega.Eventually(func(g gomega.Gomega) {
+					gotTrainJob := &trainer.TrainJob{}
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(trainJob), gotTrainJob)).Should(gomega.Succeed())
+					g.Expect(gotTrainJob.Status.Conditions).Should(gomega.BeComparableTo([]metav1.Condition{
+						{
+							Type:    trainer.TrainJobComplete,
+							Status:  metav1.ConditionTrue,
+							Reason:  jobsetconsts.AllJobsCompletedReason,
+							Message: jobsetconsts.AllJobsCompletedMessage,
+						},
+					}, util.IgnoreConditions))
+					launcherStatus, ok := jobStatusByName(gotTrainJob.Status.JobsStatus, constants.Launcher)
+					g.Expect(ok).Should(gomega.BeTrue())
+					g.Expect(launcherStatus.Succeeded).Should(gomega.Equal(ptr.To(int32(1))))
+					g.Expect(launcherStatus.Failed).Should(gomega.Equal(ptr.To(int32(0))))
+
+					nodeStatus, ok := jobStatusByName(gotTrainJob.Status.JobsStatus, constants.Node)
+					g.Expect(ok).Should(gomega.BeTrue())
+					g.Expect(nodeStatus.Failed).Should(gomega.Equal(ptr.To(int32(0))))
+				}, util.TimeoutE2E, util.Interval).Should(gomega.Succeed())
+			})
+		})
+
+		// The DeepSpeed image ships Open MPI 5, so verify the Open MPI 4 env vars with the
+		// `deepspeed-distributed` layout and an Open MPI 4 image on both replicatedJobs.
+		ginkgo.It("should create TrainJob with Open MPI 4 runtime reference", func() {
+			deepSpeed := &trainer.ClusterTrainingRuntime{}
+			gomega.Expect(k8sClient.Get(ctx, client.ObjectKey{Name: deepSpeedRuntime}, deepSpeed)).Should(gomega.Succeed())
+
+			openMPI4Runtime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, "e2e-test-openmpi4").
+				RuntimeSpec(*deepSpeed.Spec.DeepCopy()).
+				Obj()
+			for i := range openMPI4Runtime.Spec.Template.Spec.ReplicatedJobs {
+				containers := openMPI4Runtime.Spec.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers
+				for j := range containers {
+					containers[j].Image = openMPI4Image
+				}
+			}
+
+			trainJob := testingutil.MakeTrainJobWrapper(ns.Name, "e2e-test-openmpi4").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), openMPI4Runtime.Name).
+				Trainer(&trainer.Trainer{
+					NumNodes: ptr.To(int32(2)),
+					// Verify MPI ranks run across both expected nodes.
+					Command: []string{"sh", "-c", `test "$(mpirun hostname | sort -u | wc -l)" -eq 2`},
+				}).
+				Obj()
+
+			ginkgo.By("Create a TrainingRuntime with an Open MPI 4 image", func() {
+				gomega.Expect(k8sClient.Create(ctx, openMPI4Runtime)).Should(gomega.Succeed())
+			})
+
+			ginkgo.By("Create a TrainJob with the Open MPI 4 runtime reference", func() {
 				gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
 			})
 
