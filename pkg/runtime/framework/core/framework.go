@@ -188,10 +188,10 @@ func (f *Framework) RunComponentBuilderPlugins(ctx context.Context, info *runtim
 
 // RunComponentDeleterPlugins aggregates the objects returned by all ComponentDeleterPlugins.
 // It performs no deletion itself.
-func (f *Framework) RunComponentDeleterPlugins(ctx context.Context, info *runtime.Info, trainJob *trainer.TrainJob) ([]client.Object, error) {
+func (f *Framework) RunComponentDeleterPlugins(ctx context.Context, trainJob *trainer.TrainJob) ([]client.Object, error) {
 	var objs []client.Object
 	for _, plugin := range f.componentDeleterPlugins {
-		components, err := plugin.Delete(ctx, info, trainJob)
+		components, err := plugin.Delete(ctx, trainJob)
 		if err != nil {
 			return nil, err
 		}

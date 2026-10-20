@@ -528,44 +528,19 @@ func TestVolcanoDelete(t *testing.T) {
 		},
 	}
 
-	volcanoInfo := &runtime.Info{
-		RuntimePolicy: runtime.RuntimePolicy{
-			PodGroupPolicy: &trainer.PodGroupPolicy{
-				PodGroupPolicySource: trainer.PodGroupPolicySource{
-					Volcano: &trainer.VolcanoPodGroupPolicySource{},
-				},
-			},
-		},
-	}
-
 	cases := map[string]struct {
-		info          *runtime.Info
 		trainJob      *trainer.TrainJob
 		objs          []client.Object
 		withError     bool
 		withNoKindErr bool
 		wantObjs      []client.Object
 	}{
-		"nil info": {
-			info:     nil,
-			trainJob: failedTrainJob,
-			objs:     []client.Object{ownedPodGroup},
-			wantObjs: nil,
-		},
 		"nil trainjob": {
-			info:     volcanoInfo,
 			trainJob: nil,
 			objs:     []client.Object{ownedPodGroup},
 			wantObjs: nil,
 		},
-		"runtime not configured for Volcano is left alone": {
-			info:     &runtime.Info{},
-			trainJob: failedTrainJob,
-			objs:     []client.Object{ownedPodGroup},
-			wantObjs: nil,
-		},
 		"running trainjob is not touched": {
-			info: volcanoInfo,
 			trainJob: &trainer.TrainJob{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-trainjob", Namespace: "test-ns", UID: "1"},
 			},
@@ -573,7 +548,6 @@ func TestVolcanoDelete(t *testing.T) {
 			wantObjs: nil,
 		},
 		"complete trainjob returns its PodGroup": {
-			info: volcanoInfo,
 			trainJob: &trainer.TrainJob{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-trainjob", Namespace: "test-ns", UID: "1"},
 				Status: trainer.TrainJobStatus{
@@ -586,13 +560,11 @@ func TestVolcanoDelete(t *testing.T) {
 			wantObjs: []client.Object{ownedPodGroup},
 		},
 		"failed trainjob returns its PodGroup": {
-			info:     volcanoInfo,
 			trainJob: failedTrainJob,
 			objs:     []client.Object{ownedPodGroup},
 			wantObjs: []client.Object{ownedPodGroup},
 		},
 		"suspended trainjob returns its PodGroup": {
-			info: volcanoInfo,
 			trainJob: &trainer.TrainJob{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-trainjob", Namespace: "test-ns", UID: "1"},
 				Spec:       trainer.TrainJobSpec{Suspend: ptr.To(true)},
@@ -601,7 +573,6 @@ func TestVolcanoDelete(t *testing.T) {
 			wantObjs: []client.Object{ownedPodGroup},
 		},
 		"suspend field nil defaults to not-suspended": {
-			info: volcanoInfo,
 			trainJob: &trainer.TrainJob{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-trainjob", Namespace: "test-ns", UID: "1"},
 			},
@@ -609,26 +580,22 @@ func TestVolcanoDelete(t *testing.T) {
 			wantObjs: nil,
 		},
 		"PodGroup already deleted is idempotent": {
-			info:     volcanoInfo,
 			trainJob: failedTrainJob,
 			objs:     nil,
 			wantObjs: nil,
 		},
 		"PodGroup not controlled by this trainjob is left alone": {
-			info:     volcanoInfo,
 			trainJob: failedTrainJob,
 			objs:     []client.Object{notOwnedPodGroup},
 			wantObjs: nil,
 		},
 		"Get error is propagated": {
-			info:      volcanoInfo,
 			trainJob:  failedTrainJob,
 			objs:      []client.Object{ownedPodGroup},
 			withError: true,
 			wantObjs:  nil,
 		},
 		"Volcano CRD not installed is tolerated like NotFound": {
-			info:          volcanoInfo,
 			trainJob:      failedTrainJob,
 			objs:          []client.Object{ownedPodGroup},
 			withNoKindErr: true,
@@ -663,7 +630,7 @@ func TestVolcanoDelete(t *testing.T) {
 				t.Fatalf("Failed to create plugin: %v", err)
 			}
 
-			gotObjs, err := plugin.(framework.ComponentDeleterPlugin).Delete(ctx, c.info, c.trainJob)
+			gotObjs, err := plugin.(framework.ComponentDeleterPlugin).Delete(ctx, c.trainJob)
 
 			var wantErr error
 			if c.withError {

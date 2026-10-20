@@ -211,8 +211,8 @@ func (v *Volcano) Build(ctx context.Context, info *runtime.Info, trainJob *train
 // longer running: either because it reached a Failed or Complete condition, or because it
 // is currently suspended. A suspended TrainJob runs no Pods, so its PodGroup would
 // otherwise keep reserving `minResources` capacity in the Volcano queue indefinitely.
-func (v *Volcano) Delete(ctx context.Context, info *runtime.Info, trainJob *trainer.TrainJob) ([]client.Object, error) {
-	if info == nil || info.RuntimePolicy.PodGroupPolicy == nil || info.RuntimePolicy.PodGroupPolicy.Volcano == nil || trainJob == nil || !shouldDeletePodGroup(trainJob) {
+func (v *Volcano) Delete(ctx context.Context, trainJob *trainer.TrainJob) ([]client.Object, error) {
+	if trainJob == nil || !shouldDeletePodGroup(trainJob) {
 		return nil, nil
 	}
 

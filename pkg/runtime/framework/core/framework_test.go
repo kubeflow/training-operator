@@ -2398,21 +2398,10 @@ func TestRunComponentDeleterPlugins(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "test-trainjob", Namespace: metav1.NamespaceDefault, UID: "1"},
 	}
 
-	volcanoInfo := &runtime.Info{
-		RuntimePolicy: runtime.RuntimePolicy{
-			PodGroupPolicy: &trainer.PodGroupPolicy{
-				PodGroupPolicySource: trainer.PodGroupPolicySource{
-					Volcano: &trainer.VolcanoPodGroupPolicySource{},
-				},
-			},
-		},
-	}
-
 	errGetPodGroup := errors.New("error when getting existing PodGroup")
 
 	cases := map[string]struct {
 		registry  fwkplugins.Registry
-		info      *runtime.Info
 		objs      []client.Object
 		trainJob  *trainer.TrainJob
 		withError bool
@@ -2421,27 +2410,23 @@ func TestRunComponentDeleterPlugins(t *testing.T) {
 	}{
 		"empty registry returns nothing": {
 			registry: fwkplugins.Registry{},
-			info:     volcanoInfo,
 			trainJob: failedTrainJob,
 			wantObjs: nil,
 		},
 		"failed trainjob: volcano returns its PodGroup": {
 			registry: fwkplugins.NewRegistry(),
-			info:     volcanoInfo,
 			objs:     []client.Object{ownedPodGroup},
 			trainJob: failedTrainJob,
 			wantObjs: []client.Object{ownedPodGroup},
 		},
 		"running trainjob: nothing to delete": {
 			registry: fwkplugins.NewRegistry(),
-			info:     volcanoInfo,
 			objs:     []client.Object{ownedPodGroup},
 			trainJob: runningTrainJob,
 			wantObjs: nil,
 		},
 		"a plugin's Get error is propagated and no objects are returned": {
 			registry:  fwkplugins.NewRegistry(),
-			info:      volcanoInfo,
 			objs:      []client.Object{ownedPodGroup},
 			trainJob:  failedTrainJob,
 			withError: true,
@@ -2468,7 +2453,7 @@ func TestRunComponentDeleterPlugins(t *testing.T) {
 				t.Fatalf("Failed to create framework: %v", err)
 			}
 
-			gotObjs, err := fwk.RunComponentDeleterPlugins(ctx, tc.info, tc.trainJob)
+			gotObjs, err := fwk.RunComponentDeleterPlugins(ctx, tc.trainJob)
 			if diff := cmp.Diff(tc.wantError, err, cmpopts.EquateErrors()); len(diff) != 0 {
 				t.Errorf("Unexpected error (-want,+got):\n%s", diff)
 			}

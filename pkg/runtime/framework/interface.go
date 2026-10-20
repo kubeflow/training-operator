@@ -84,7 +84,7 @@ type ComponentBuilderPlugin interface {
 // should be removed and must be idempotent. The caller performs the deletion.
 type ComponentDeleterPlugin interface {
 	Plugin
-	Delete(ctx context.Context, info *runtime.Info, trainJob *trainer.TrainJob) ([]client.Object, error)
+	Delete(ctx context.Context, trainJob *trainer.TrainJob) ([]client.Object, error)
 }
 
 type TrainJobStatusPlugin interface {
