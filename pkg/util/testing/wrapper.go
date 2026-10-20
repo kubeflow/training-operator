@@ -21,6 +21,7 @@ import (
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -812,6 +813,36 @@ func (t *TrainJobTrainerWrapper) ResourceClaimsPerNode(claims ...trainer.Trainer
 
 func (t *TrainJobTrainerWrapper) Obj() *trainer.Trainer {
 	return &t.Trainer
+}
+
+type ResourceClaimTemplateWrapper struct {
+	resourcev1.ResourceClaimTemplate
+}
+
+func MakeResourceClaimTemplateWrapper(namespace, name string) *ResourceClaimTemplateWrapper {
+	return &ResourceClaimTemplateWrapper{
+		ResourceClaimTemplate: resourcev1.ResourceClaimTemplate{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      name,
+			},
+		},
+	}
+}
+
+func (w *ResourceClaimTemplateWrapper) DeviceRequest(name, deviceClassName string, count int64) *ResourceClaimTemplateWrapper {
+	w.Spec.Spec.Devices.Requests = append(w.Spec.Spec.Devices.Requests, resourcev1.DeviceRequest{
+		Name: name,
+		Exactly: &resourcev1.ExactDeviceRequest{
+			DeviceClassName: deviceClassName,
+			Count:           count,
+		},
+	})
+	return w
+}
+
+func (w *ResourceClaimTemplateWrapper) Obj() *resourcev1.ResourceClaimTemplate {
+	return &w.ResourceClaimTemplate
 }
 
 type TrainJobInitializerWrapper struct {

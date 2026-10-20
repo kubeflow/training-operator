@@ -26,6 +26,7 @@ import (
 	"sort"
 
 	corev1 "k8s.io/api/core/v1"
+	resourcev1 "k8s.io/api/resource/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
@@ -107,7 +109,7 @@ func (r *TrainingRuntime) NewObjects(ctx context.Context, trainJob *trainer.Trai
 		}
 	}
 
-	info, err := r.RuntimeInfo(trainJob, trainingRuntime.Spec.Template, trainingRuntime.Spec.MLPolicy, trainingRuntime.Spec.PodGroupPolicy)
+	info, err := r.buildRuntimeInfo(ctx, trainJob, trainingRuntime.Spec.Template, trainingRuntime.Spec.MLPolicy, trainingRuntime.Spec.PodGroupPolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +122,9 @@ func (r *TrainingRuntime) NewObjects(ctx context.Context, trainJob *trainer.Trai
 //     runtime `.spec.mlPolicy` and `.spec.podGroupPolicy`.
 //  2. EnforcePodSpec, for the PodSet concerns enabled outside of MLPolicy and PodGroupPolicy APIs.
 //  3. PreBuildSync, which consolidates the Info object with the concrete runtime template.
+//
+// It makes no API calls, so external callers such as Kueue can use it. The DRA GPU count is
+// therefore left unresolved (0); see buildRuntimeInfo.
 func (r *TrainingRuntime) RuntimeInfo(
 	trainJob *trainer.TrainJob, runtimeTemplateSpec any, mlPolicy *trainer.MLPolicy, podGroupPolicy *trainer.PodGroupPolicy,
 ) (*runtime.Info, error) {
@@ -132,20 +137,43 @@ func (r *TrainingRuntime) RuntimeInfo(
 	if err != nil {
 		return nil, err
 	}
-	if err = r.framework.RunEnforceMLPolicyPlugins(info, trainJob); err != nil {
+	if err = r.runBuildPhasePlugins(info, trainJob); err != nil {
 		return nil, err
 	}
-	if err = r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob); err != nil {
-		return nil, err
-	}
-	if err = r.framework.RunEnforcePodSpecPlugins(info, trainJob); err != nil {
-		return nil, err
-	}
-	if err = r.framework.RunPreComponentBuilderPlugins(info, trainJob); err != nil {
-		return nil, err
-	}
-
 	return info, nil
+}
+
+// buildRuntimeInfo is RuntimeInfo for the object-build path: it additionally resolves the DRA GPU
+// count of every PodSet from the referenced ResourceClaimTemplates before the Build Phase plugins
+// run. This is the only path that reads those objects from the API server.
+func (r *TrainingRuntime) buildRuntimeInfo(
+	ctx context.Context, trainJob *trainer.TrainJob, jobSetTemplateSpec trainer.JobSetTemplateSpec, mlPolicy *trainer.MLPolicy, podGroupPolicy *trainer.PodGroupPolicy,
+) (*runtime.Info, error) {
+	info, err := r.newRuntimeInfo(trainJob, jobSetTemplateSpec, mlPolicy, podGroupPolicy)
+	if err != nil {
+		return nil, err
+	}
+	if features.Enabled(features.TrainJobDynamicResourceAllocation) {
+		r.resolveDRAGPUCounts(ctx, trainJob.Namespace, info)
+	}
+	if err = r.runBuildPhasePlugins(info, trainJob); err != nil {
+		return nil, err
+	}
+	return info, nil
+}
+
+// runBuildPhasePlugins consolidates the Info object through the Build Phase extension points.
+func (r *TrainingRuntime) runBuildPhasePlugins(info *runtime.Info, trainJob *trainer.TrainJob) error {
+	if err := r.framework.RunEnforceMLPolicyPlugins(info, trainJob); err != nil {
+		return err
+	}
+	if err := r.framework.RunEnforcePodGroupPolicyPlugins(info, trainJob); err != nil {
+		return err
+	}
+	if err := r.framework.RunEnforcePodSpecPlugins(info, trainJob); err != nil {
+		return err
+	}
+	return r.framework.RunPreComponentBuilderPlugins(info, trainJob)
 }
 
 func (r *TrainingRuntime) newRuntimeInfo(
@@ -419,4 +447,71 @@ func toApplyConfig(res corev1.ResourceRequirements) *corev1ac.ResourceRequiremen
 		out.WithClaims(c)
 	}
 	return out
+}
+
+// resolveDRAGPUCounts sets DRAGPUCount on every PodSet from the node container of the matching
+// replicated Job in the JobSet apply configuration.
+func (r *TrainingRuntime) resolveDRAGPUCounts(ctx context.Context, namespace string, info *runtime.Info) {
+	jobSetSpec, ok := runtime.TemplateSpecApply[jobsetv1alpha2ac.JobSetSpecApplyConfiguration](info)
+	if !ok {
+		return
+	}
+	for _, rJob := range jobSetSpec.ReplicatedJobs {
+		podSpec := rJob.Template.Spec.Template.Spec
+		if podSpec == nil {
+			continue
+		}
+		if ps := info.FindPodSetByName(ptr.Deref(rJob.Name, "")); ps != nil {
+			ps.DRAGPUCount = r.resolveDRAGPUCount(ctx, namespace, podSpec)
+		}
+	}
+}
+
+// resolveDRAGPUCount reads the first resources.claims entry of the node container, resolves the
+// referenced pod-level resourceClaim to its ResourceClaimTemplate or ResourceClaim, and returns
+// the GPU count from the device requests. It returns 0 when nothing is referenced or the object
+// cannot be read: GPU detection never fails the TrainJob.
+func (r *TrainingRuntime) resolveDRAGPUCount(ctx context.Context, namespace string, podSpec *corev1ac.PodSpecApplyConfiguration) int {
+	// Find the node container's first claim reference.
+	var claimName string
+	for _, c := range podSpec.Containers {
+		if ptr.Deref(c.Name, "") != constants.Node {
+			continue
+		}
+		if c.Resources == nil || len(c.Resources.Claims) == 0 {
+			return 0
+		}
+		claimName = ptr.Deref(c.Resources.Claims[0].Name, "")
+		break
+	}
+	if claimName == "" {
+		return 0
+	}
+
+	// Resolve the pod-level claim to find the template or direct claim name.
+	for _, pc := range podSpec.ResourceClaims {
+		if ptr.Deref(pc.Name, "") != claimName {
+			continue
+		}
+		if pc.ResourceClaimTemplateName != nil && *pc.ResourceClaimTemplateName != "" {
+			var rct resourcev1.ResourceClaimTemplate
+			if err := r.client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: *pc.ResourceClaimTemplateName}, &rct); err != nil {
+				log := ctrl.LoggerFrom(ctx)
+				log.V(2).Info("Failed to resolve ResourceClaimTemplate for DRA GPU detection", "name", *pc.ResourceClaimTemplateName, "error", err)
+				return 0
+			}
+			return runtime.NumGPUFromDeviceRequests(rct.Spec.Spec.Devices.Requests)
+		}
+		if pc.ResourceClaimName != nil && *pc.ResourceClaimName != "" {
+			var rc resourcev1.ResourceClaim
+			if err := r.client.Get(ctx, client.ObjectKey{Namespace: namespace, Name: *pc.ResourceClaimName}, &rc); err != nil {
+				log := ctrl.LoggerFrom(ctx)
+				log.V(2).Info("Failed to resolve ResourceClaim for DRA GPU detection", "name", *pc.ResourceClaimName, "error", err)
+				return 0
+			}
+			return runtime.NumGPUFromDeviceRequests(rc.Spec.Devices.Requests)
+		}
+		return 0
+	}
+	return 0
 }

@@ -654,7 +654,8 @@ This design:
 
 - Avoids changing the `EnforceMLPolicyPlugin` interface (which has no `context.Context`)
 - Avoids adding `client.Client` to plugin structs that do not currently store one
-- Keeps the `GetNumGPUPerNode()` signature backward compatible with all existing callers
+- Extends `GetNumGPUPerNode()` to take the runtime `Info` so there is a single GPU-count helper
+  for plugins; its only callers are the in-tree ML policy plugins
 
 Extended resources still take priority. DRA count is only used as a fallback when no
 `nvidia.com/gpu` (or similar) extended resource is found. If the
@@ -681,12 +682,9 @@ Phase 1 lands in two PRs:
 1. Claims wiring ([#4027](https://github.com/kubeflow/trainer/pull/4027)): the API fields, the
    feature gate, applying claims to the node PodSpec and container, `runtimePatches` support,
    validation, and the admission warning when `numProcPerNode` is unset.
-2. DRA-aware GPU detection (follow-up): `ResourceClaimTemplate` resolution on the build path,
-   the `PodSet` propagation, the ML policy plugin fallbacks, and the `resourceclaimtemplates` /
-   `resourceclaims` RBAC.
-
-Until the second PR lands, a DRA-only TrainJob uses the CPU-derived `numProcPerNode` and users
-set it explicitly.
+2. DRA-aware GPU detection ([#4267](https://github.com/kubeflow/trainer/issues/4267)):
+   `ResourceClaimTemplate` resolution on the build path, the `PodSet` propagation, the ML
+   policy plugin fallbacks, and the `resourceclaimtemplates` / `resourceclaims` RBAC.
 
 ### Validation
 
@@ -742,9 +740,9 @@ and CRD manifests.
 | `pkg/runtime/framework/plugins/jobset/jobset.go`         | Reject container claims with no Pod-level claim in the merged spec            |
 | `pkg/runtime/framework/plugins/torch/torch.go`           | Admission warning when the node container has DRA claims and `numProcPerNode` is unset |
 | `pkg/runtime/core/trainingruntime_test.go`               | Test top-level claims application and merge behavior                         |
-| `pkg/runtime/runtime.go` (follow-up PR)                  | Propagate DRA GPU count via `PodSet`                                         |
-| `pkg/runtime/framework/plugins/{torch,mpi,xgboost,flux}` (follow-up PR) | Use DRA GPU count as fallback when GPU count is 0             |
-| `manifests/base/rbac/` (follow-up PR)                    | Add `resourceclaimtemplates` and `resourceclaims` get/list/watch permission to ClusterRole |
+| `pkg/runtime/runtime.go`                                 | Propagate DRA GPU count via `PodSet`                                         |
+| `pkg/runtime/framework/plugins/{torch,mpi,xgboost,flux}` | Use DRA GPU count as fallback when GPU count is 0                            |
+| `manifests/base/rbac/`                                   | Add `resourceclaimtemplates` and `resourceclaims` get/list/watch permission to ClusterRole |
 | `sdk/python/kubeflow/trainer/api_client.py` (or similar) | Add `list_resource_claim_templates(namespace)` method                        |
 | `docs/` (Trainer website)                                | Admin DRA setup guide: template examples, "gpu" request naming requirement for auto-detection |
 

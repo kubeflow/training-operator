@@ -39,13 +39,24 @@ A `ResourceClaimTemplate` describes the devices a Pod needs. When a TrainJob ref
 template, Kubernetes creates a separate `ResourceClaim` for every training node Pod, so each
 node gets its own devices.
 
-For every TrainJob, the Trainer controller adds the claims from
-`spec.trainer.resourceClaimsPerNode` to the training Pod's `resourceClaims` and to the `node`
-container's `resources.claims`.
+For every TrainJob, the Trainer controller:
 
-The GPU count is not yet derived from the `ResourceClaimTemplate`, so set
-`spec.trainer.numProcPerNode` explicitly for DRA TrainJobs; otherwise the Torch runtime falls
-back to the CPU count.
+1. Adds the claims from `spec.trainer.resourceClaimsPerNode` to the training Pod's
+   `resourceClaims` and to the `node` container's `resources.claims`.
+2. Reads the **first** claim referenced by the `node` container, resolves its
+   `ResourceClaimTemplate` (or `ResourceClaim`), and counts the GPUs it requests. The count is
+   used the same way as an extended GPU resource: PyTorch `numProcPerNode`, MPI slots per node,
+   XGBoost workers per node, and Flux GPUs per node. Extended GPU resources, if present, take
+   priority over the DRA count.
+
+:::{important}
+For GPU auto-detection to work, the device request `name` must contain `gpu`
+(for example `gpu` or `h100-gpu`). Only `exactly` requests with `allocationMode: ExactCount`
+(the default) are counted. `firstAvailable` requests, `allocationMode: All`, and
+`adminAccess: true` requests contribute 0. If no GPU count can be resolved, PyTorch falls back
+to the CPU count and the admission webhook returns a warning; set `spec.trainer.numProcPerNode`
+explicitly in that case.
+:::
 
 ## Create a ResourceClaimTemplate
 
@@ -83,15 +94,14 @@ spec:
   trainer:
     image: docker.io/my-training:latest
     numNodes: 4
-    numProcPerNode: 8
     resourceClaimsPerNode:
       - name: gpu
         resourceClaimTemplateName: gpu-claim-template
 ```
 
 Each training node Pod gets a `gpu` claim created from `gpu-claim-template`, and the `node`
-container consumes it. `numProcPerNode` matches the template's device count so torchrun starts
-one worker per GPU.
+container consumes it. The controller resolves the template's device count (8), so torchrun
+starts one worker per GPU without setting `numProcPerNode`.
 
 If the runtime already defines a Pod-level claim with the same `name`, the TrainJob entry
 replaces it.
@@ -114,7 +124,6 @@ spec:
   trainer:
     image: docker.io/my-training:latest
     numNodes: 4
-    numProcPerNode: 8
     resourceClaimsPerNode:
       - name: gpu
         resourceClaimTemplateName: gpu-claim-template
@@ -150,6 +159,14 @@ The Trainer admission webhook rejects TrainJobs with dangling references.
   container, and `spec.trainer.resourceClaimsPerNode` adds to its claims.
 - Once set, `runtimePatches[].…resourceClaims` is immutable (CEL-enforced); other
   `runtimePatches` changes are still allowed while the TrainJob is suspended.
+
+## RBAC
+
+The Trainer controller reads `ResourceClaimTemplate` and `ResourceClaim` objects to resolve
+the GPU count, and the first lookup starts an informer for them. The Helm chart and the
+Kustomize manifests grant `get`, `list`, and `watch` on `resourceclaims` and
+`resourceclaimtemplates` in the `resource.k8s.io` API group. If you manage RBAC yourself, add
+the same rules. Without them the GPU count resolves to 0, so set `numProcPerNode` explicitly.
 
 ## Next steps
 

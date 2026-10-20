@@ -75,7 +75,7 @@ func (r *ClusterTrainingRuntime) NewObjects(ctx context.Context, trainJob *train
 		}
 	}
 
-	info, err := r.RuntimeInfo(trainJob, clTrainingRuntime.Spec.Template, clTrainingRuntime.Spec.MLPolicy, clTrainingRuntime.Spec.PodGroupPolicy)
+	info, err := r.buildRuntimeInfo(ctx, trainJob, clTrainingRuntime.Spec.Template, clTrainingRuntime.Spec.MLPolicy, clTrainingRuntime.Spec.PodGroupPolicy)
 	if err != nil {
 		return nil, err
 	}

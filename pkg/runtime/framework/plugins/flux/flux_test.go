@@ -526,7 +526,9 @@ func TestOptionalTrainerFields(t *testing.T) {
 		podSetCount int32
 		// fluxPolicy overrides the runtime's FluxMLPolicySource; defaults to numProcPerNode=1.
 		fluxPolicy *trainer.FluxMLPolicySource
-		jobTrainer *trainer.Trainer
+		// draGPUCount is the GPU count resolved from the DRA ResourceClaimTemplate.
+		draGPUCount int
+		jobTrainer  *trainer.Trainer
 		// wantCommand is only asserted when set.
 		wantCommand []string
 		wantFlags   string
@@ -550,6 +552,13 @@ func TestOptionalTrainerFields(t *testing.T) {
 			podSetCount:  2,
 			fluxPolicy:   &trainer.FluxMLPolicySource{},
 			wantFlags:    "-N 2 -n 2",
+			wantHostlist: "test-job-node-0-[0-1]",
+		},
+		"DRA GPU count adds the same gpus-per-task flag": {
+			podSetCount:  2,
+			draGPUCount:  2,
+			jobTrainer:   utiltesting.MakeTrainJobTrainerWrapper().Obj(),
+			wantFlags:    "-N 2 -n 2 -g 2",
 			wantHostlist: "test-job-node-0-[0-1]",
 		},
 		"env and num proc per node from the TrainJob are applied": {
@@ -600,10 +609,11 @@ func TestOptionalTrainerFields(t *testing.T) {
 						),
 					PodSets: []runtime.PodSet{
 						{
-							Name:       constants.Node,
-							Ancestor:   ptr.To(constants.AncestorTrainer),
-							Count:      ptr.To(tc.podSetCount),
-							Containers: []runtime.Container{{Name: constants.Node, Command: []string{"python", "train.py"}}},
+							Name:        constants.Node,
+							Ancestor:    ptr.To(constants.AncestorTrainer),
+							Count:       ptr.To(tc.podSetCount),
+							DRAGPUCount: tc.draGPUCount,
+							Containers:  []runtime.Container{{Name: constants.Node, Command: []string{"python", "train.py"}}},
 						},
 					},
 				},

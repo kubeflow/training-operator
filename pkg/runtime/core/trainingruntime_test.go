@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
+	resourcev1 "k8s.io/api/resource/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +35,7 @@ import (
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/klog/v2/ktesting"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 
@@ -146,9 +148,11 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 	cases := map[string]struct {
 		trainingRuntime *trainer.TrainingRuntime
 		trainJob        *trainer.TrainJob
-		ObjCmpOpts      []cmp.Option
-		wantObjs        []runtime.Object
-		wantError       error
+		// objs are extra objects seeded into the fake client, such as ResourceClaimTemplates.
+		objs       []client.Object
+		ObjCmpOpts []cmp.Option
+		wantObjs   []runtime.Object
+		wantError  error
 	}{
 		// Test cases for the PlainML MLPolicy.
 		"succeeded to build PodGroup and JobSet with NumNodes from the TrainJob and container from the Runtime.": {
@@ -2293,8 +2297,13 @@ test-job-node-0-1.test-job slots=8
 						Obj(),
 				).
 				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 8).
+					Obj(),
+			},
 			wantObjs: []runtime.Object{
-				wantDRATorchJobSet(resRequests, "1").
+				wantDRATorchJobSet(resRequests, "auto").
 					PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("tmpl")}).
 					ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
 					Obj(),
@@ -2316,9 +2325,14 @@ test-job-node-0-1.test-job slots=8
 						Obj(),
 				).
 				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl-b").
+					DeviceRequest("gpu", "gpu.nvidia.com", 4).
+					Obj(),
+			},
 			// Only tmpl-b is seeded, so PET_NPROC_PER_NODE=auto proves the TrainJob's template was resolved.
 			wantObjs: []runtime.Object{
-				wantDRATorchJobSet(resRequests, "1").
+				wantDRATorchJobSet(resRequests, "auto").
 					PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("tmpl-b")}).
 					ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
 					Obj(),
@@ -2340,8 +2354,13 @@ test-job-node-0-1.test-job slots=8
 						Obj(),
 				).
 				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 2).
+					Obj(),
+			},
 			wantObjs: []runtime.Object{
-				wantDRATorchJobSet(resRequests, "1").
+				wantDRATorchJobSet(resRequests, "auto").
 					Container(constants.Node, constants.Node, "test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 					PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("tmpl")}).
 					ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
@@ -2370,10 +2389,15 @@ test-job-node-0-1.test-job slots=8
 						Obj(),
 				).
 				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 8).
+					Obj(),
+			},
 			// resourceClaimsPerNode replaces the Pod-level claim, so the runtime's container-level
 			// request, which named a device request in the previous template, is dropped with it.
 			wantObjs: []runtime.Object{
-				wantDRATorchJobSet(resRequests, "1").
+				wantDRATorchJobSet(resRequests, "auto").
 					PodResourceClaims(constants.Node,
 						corev1.PodResourceClaim{Name: "nic", ResourceClaimTemplateName: ptr.To("nic-tmpl")},
 						corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("tmpl")},
@@ -2432,11 +2456,37 @@ test-job-node-0-1.test-job slots=8
 					},
 				}).
 				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 8).
+					Obj(),
+			},
 			wantObjs: []runtime.Object{
-				wantDRATorchJobSet(resRequests, "1").
+				wantDRATorchJobSet(resRequests, "auto").
 					InitContainer(constants.Node, constants.ModelInitializer, "test:runtime").
 					ContainerResourceClaims(constants.Node, constants.ModelInitializer, corev1.ResourceClaim{Name: "gpu"}).
 					PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("tmpl")}).
+					ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
+					Obj(),
+			},
+		},
+		"missing ResourceClaimTemplate keeps the CPU-derived numProcPerNode": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				draTorchRuntimeSpec(resRequests).Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				UID("uid").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ResourceClaimsPerNode(trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: "missing"}).
+						Obj(),
+				).
+				Obj(),
+			// The template is not seeded, so the GPU count resolves to 0 and torchrun falls back to the CPU count.
+			wantObjs: []runtime.Object{
+				wantDRATorchJobSet(resRequests, "1").
+					PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("missing")}).
 					ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
 					Obj(),
 			},
@@ -2477,7 +2527,7 @@ test-job-node-0-1.test-job slots=8
 			var cancel func()
 			ctx, cancel = context.WithCancel(ctx)
 			t.Cleanup(cancel)
-			clientBuilder := testingutil.NewClientBuilder()
+			clientBuilder := testingutil.NewClientBuilder().WithObjects(tc.objs...)
 			if tc.trainingRuntime != nil {
 				clientBuilder.WithObjects(tc.trainingRuntime)
 			}
@@ -2790,6 +2840,304 @@ func TestToApplyConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if diff := cmp.Diff(tc.want, toApplyConfig(tc.res)); len(diff) != 0 {
 				t.Errorf("Unexpected apply configuration (-want,+got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestTrainingRuntimeDRAGPUCount(t *testing.T) {
+	resRequests := corev1.ResourceList{
+		corev1.ResourceCPU: resource.MustParse("1"),
+	}
+
+	cases := map[string]struct {
+		trainingRuntime *trainer.TrainingRuntime
+		trainJob        *trainer.TrainJob
+		objs            []client.Object
+		// disableDRAGate turns the TrainJobDynamicResourceAllocation feature gate off for the case.
+		disableDRAGate  bool
+		wantDRAGPUCount map[string]int
+	}{
+		"feature gate disabled leaves the GPU count unresolved": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				draTorchRuntimeSpec(resRequests).Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ResourceClaimsPerNode(trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: "tmpl"}).
+						Obj(),
+				).
+				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 8).
+					Obj(),
+			},
+			disableDRAGate: true,
+			wantDRAGPUCount: map[string]int{
+				constants.DatasetInitializer: 0,
+				constants.ModelInitializer:   0,
+				constants.Node:               0,
+			},
+		},
+		"resourceClaimsPerNode resolves the GPU count from the ResourceClaimTemplate": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				draTorchRuntimeSpec(resRequests).Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ResourceClaimsPerNode(trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: "tmpl"}).
+						Obj(),
+				).
+				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 8).
+					Obj(),
+			},
+			wantDRAGPUCount: map[string]int{
+				constants.DatasetInitializer: 0,
+				constants.ModelInitializer:   0,
+				constants.Node:               8,
+			},
+		},
+		"runtime-defined claims resolve the GPU count without spec.trainer": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				draTorchRuntimeSpec(resRequests).
+					PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimTemplateName: ptr.To("tmpl")}).
+					ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
+					Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 8).
+					Obj(),
+			},
+			wantDRAGPUCount: map[string]int{
+				constants.DatasetInitializer: 0,
+				constants.ModelInitializer:   0,
+				constants.Node:               8,
+			},
+		},
+		"resourceClaimName resolves the GPU count from the ResourceClaim": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				draTorchRuntimeSpec(resRequests).
+					PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "gpu", ResourceClaimName: ptr.To("claim-x")}).
+					ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "gpu"}).
+					Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Obj(),
+			objs: []client.Object{
+				&resourcev1.ResourceClaim{
+					ObjectMeta: metav1.ObjectMeta{Namespace: metav1.NamespaceDefault, Name: "claim-x"},
+					Spec: resourcev1.ResourceClaimSpec{
+						Devices: resourcev1.DeviceClaim{
+							Requests: []resourcev1.DeviceRequest{{
+								Name: "gpu",
+								Exactly: &resourcev1.ExactDeviceRequest{
+									DeviceClassName: "gpu.nvidia.com",
+									Count:           4,
+								},
+							}},
+						},
+					},
+				},
+			},
+			wantDRAGPUCount: map[string]int{
+				constants.DatasetInitializer: 0,
+				constants.ModelInitializer:   0,
+				constants.Node:               4,
+			},
+		},
+		"ResourceClaimTemplate not found resolves to zero": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				draTorchRuntimeSpec(resRequests).Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ResourceClaimsPerNode(trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: "missing"}).
+						Obj(),
+				).
+				Obj(),
+			wantDRAGPUCount: map[string]int{
+				constants.DatasetInitializer: 0,
+				constants.ModelInitializer:   0,
+				constants.Node:               0,
+			},
+		},
+		"two gpu device requests in one template are summed": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				draTorchRuntimeSpec(resRequests).Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ResourceClaimsPerNode(trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: "tmpl"}).
+						Obj(),
+				).
+				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu-a100", "gpu.nvidia.com", 4).
+					DeviceRequest("gpu-h100", "gpu.nvidia.com", 4).
+					Obj(),
+			},
+			wantDRAGPUCount: map[string]int{
+				constants.DatasetInitializer: 0,
+				constants.ModelInitializer:   0,
+				constants.Node:               8,
+			},
+		},
+		"runtime-wired claim does not shadow the resourceClaimsPerNode claim": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				draTorchRuntimeSpec(resRequests).
+					PodResourceClaims(constants.Node, corev1.PodResourceClaim{Name: "nic", ResourceClaimTemplateName: ptr.To("nic-tmpl")}).
+					ContainerResourceClaims(constants.Node, constants.Node, corev1.ResourceClaim{Name: "nic"}).
+					Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ResourceClaimsPerNode(trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: "tmpl"}).
+						Obj(),
+				).
+				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "nic-tmpl").
+					DeviceRequest("rdma-nic", "nic.mellanox.com", 2).
+					Obj(),
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 8).
+					Obj(),
+			},
+			// The runtime already wires "nic" onto the node container. resolveDRAGPUCount only
+			// looks at the first resources.claims entry, so the TrainJob's claim must be placed
+			// ahead of it, not appended after.
+			wantDRAGPUCount: map[string]int{
+				constants.DatasetInitializer: 0,
+				constants.ModelInitializer:   0,
+				constants.Node:               8,
+			},
+		},
+		"only the first resourceClaimsPerNode entry is resolved": {
+			trainingRuntime: testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(
+				draTorchRuntimeSpec(resRequests).Obj(),
+			).Obj(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ResourceClaimsPerNode(
+							trainer.TrainerResourceClaim{Name: "nic", ResourceClaimTemplateName: "nic-tmpl"},
+							trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: "tmpl"},
+						).
+						Obj(),
+				).
+				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "nic-tmpl").
+					DeviceRequest("rdma-nic", "nic.mellanox.com", 2).
+					Obj(),
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 8).
+					Obj(),
+			},
+			// Documents the KEP's first-claim-only rule: the user declared "nic" first, so the
+			// GPU claim behind it is not counted and numProcPerNode must be set explicitly.
+			wantDRAGPUCount: map[string]int{
+				constants.DatasetInitializer: 0,
+				constants.ModelInitializer:   0,
+				constants.Node:               0,
+			},
+		},
+		"MPI runLauncherAsNode resolves the GPU count on both launcher and node": {
+			trainingRuntime: func() *trainer.TrainingRuntime {
+				spec := testingutil.MakeTrainingRuntimeSpecWrapper(testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").Spec).
+					WithMLPolicy(
+						testingutil.MakeMLPolicyWrapper().
+							WithNumNodes(1).
+							WithMLPolicySource(*testingutil.MakeMLPolicySourceWrapper().
+								MPIPolicy(ptr.To[int32](1), trainer.MPIImplementationOpenMPI, ptr.To("/root/.ssh"), ptr.To(true)).
+								Obj(),
+							).
+							Obj(),
+					).
+					LauncherReplica().
+					Replicas(1, constants.Launcher).
+					Container(constants.Node, constants.Node, "test:runtime", []string{"runtime"}, []string{"runtime"}, resRequests).
+					Obj()
+				// With runLauncherAsNode, the launcher carries the trainer ancestor label instead of the node job.
+				for i := range spec.Template.Spec.ReplicatedJobs {
+					rJob := &spec.Template.Spec.ReplicatedJobs[i]
+					switch rJob.Name {
+					case constants.Launcher:
+						rJob.Template.Labels = map[string]string{constants.LabelTrainJobAncestor: constants.AncestorTrainer}
+					case constants.Node:
+						delete(rJob.Template.Labels, constants.LabelTrainJobAncestor)
+					}
+				}
+				return testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "test-runtime").RuntimeSpec(spec).Obj()
+			}(),
+			trainJob: testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "test-job").
+				RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "test-runtime").
+				Trainer(
+					testingutil.MakeTrainJobTrainerWrapper().
+						ResourceClaimsPerNode(trainer.TrainerResourceClaim{Name: "gpu", ResourceClaimTemplateName: "tmpl"}).
+						Obj(),
+				).
+				Obj(),
+			objs: []client.Object{
+				testingutil.MakeResourceClaimTemplateWrapper(metav1.NamespaceDefault, "tmpl").
+					DeviceRequest("gpu", "gpu.nvidia.com", 8).
+					Obj(),
+			},
+			wantDRAGPUCount: map[string]int{
+				constants.DatasetInitializer: 0,
+				constants.ModelInitializer:   0,
+				constants.Launcher:           8,
+				constants.Node:               8,
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			// Do not use t.Parallel() — SetFeatureGateDuringTest mutates global state.
+			featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.TrainJobDynamicResourceAllocation, !tc.disableDRAGate)
+			_, ctx := ktesting.NewTestContext(t)
+			clientBuilder := testingutil.NewClientBuilder().WithObjects(tc.objs...)
+			c := clientBuilder.Build()
+
+			trainingRuntime, err := NewTrainingRuntime(ctx, c, testingutil.AsIndex(clientBuilder), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// The DRA GPU count is only resolved on the object-build path, so go through
+			// buildRuntimeInfo rather than the public RuntimeInfo.
+			info, err := trainingRuntime.(*TrainingRuntime).buildRuntimeInfo(ctx, tc.trainJob, tc.trainingRuntime.Spec.Template, tc.trainingRuntime.Spec.MLPolicy, tc.trainingRuntime.Spec.PodGroupPolicy)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			gotDRAGPUCount := make(map[string]int, len(info.TemplateSpec.PodSets))
+			for _, ps := range info.TemplateSpec.PodSets {
+				gotDRAGPUCount[ps.Name] = ps.DRAGPUCount
+			}
+			if diff := cmp.Diff(tc.wantDRAGPUCount, gotDRAGPUCount); len(diff) != 0 {
+				t.Errorf("Unexpected DRA GPU count (-want,+got):\n%s", diff)
 			}
 		})
 	}
