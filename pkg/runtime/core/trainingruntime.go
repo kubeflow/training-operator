@@ -114,6 +114,13 @@ func (r *TrainingRuntime) NewObjects(ctx context.Context, trainJob *trainer.Trai
 	return r.framework.RunComponentBuilderPlugins(ctx, info, trainJob)
 }
 
+// DeleteObjects returns the previously materialized objects that should now be removed
+// for the TrainJob. It runs on every TrainJob reconcile and does not read the runtime:
+// each ComponentDeleterPlugin decides from the TrainJob state whether anything is returned.
+func (r *TrainingRuntime) DeleteObjects(ctx context.Context, trainJob *trainer.TrainJob) ([]client.Object, error) {
+	return r.framework.RunComponentDeleterPlugins(ctx, trainJob)
+}
+
 // RuntimeInfo builds the Info object for a TrainJob and consolidates it through the
 // Build Phase extension points, in this order:
 //  1. EnforceMLPolicy, then EnforcePodGroupPolicy, for the parameters declared in the

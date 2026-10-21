@@ -156,14 +156,16 @@ scheduler-plugins-crd: ## Copy the CRDs from the Scheduler Plugins repository to
 	mkdir -p $(EXTERNAL_CRDS_DIR)/scheduler-plugins/
 	cp -f $(SCHEDULER_PLUGINS_ROOT)/manifests/coscheduling/* $(EXTERNAL_CRDS_DIR)/scheduler-plugins
 
-VOLCANO_APIS_ROOT = $(shell go list -m -f "{{.Dir}}" volcano.sh/apis)
-VOLCANO_VERSION = $(shell basename $(VOLCANO_APIS_ROOT) | cut -d'@' -f2)
+# volcano.sh/apis is versioned separately from the volcano-sh/volcano repository, and go.mod may pin it
+# to a pseudo-version (e.g. v1.13.1-0.20251028070205-46d20c0699e7) whose commit does not exist there.
+# Strip the pseudo-version suffix to get the release tag the CRD is downloaded from.
+VOLCANO_VERSION ?= $(shell go list -m -f '{{.Version}}' volcano.sh/apis | sed -E 's/-0\..*//')
 VOLCANO_CRD_URL = https://raw.githubusercontent.com/volcano-sh/volcano/$(VOLCANO_VERSION)/config/crd/volcano/bases/scheduling.volcano.sh_podgroups.yaml
 
 .PHONY: volcano-crd
 volcano-crd: ## Copy the CRDs from Volcano repository to the manifests/external-crds directory.
 	mkdir -p $(EXTERNAL_CRDS_DIR)/volcano/
-	curl -sSL $(VOLCANO_CRD_URL) -o $(EXTERNAL_CRDS_DIR)/volcano/scheduling.volcano.sh_podgroups.yaml
+	curl -fsSL $(VOLCANO_CRD_URL) -o $(EXTERNAL_CRDS_DIR)/volcano/scheduling.volcano.sh_podgroups.yaml
 
 # Instructions for code generation.
 .PHONY: manifests
