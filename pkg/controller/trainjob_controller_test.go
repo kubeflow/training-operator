@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/client-go/tools/events"
 	"k8s.io/klog/v2/ktesting"
@@ -37,7 +36,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
 
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
@@ -277,6 +275,9 @@ func TestReconcileUnsupportedRuntime(t *testing.T) {
 // or plugin registry. newObjectsErr/deleteObjectsErr let tests exercise error propagation
 // from each without a real plugin returning one.
 type fakeRuntime struct {
+	// Embedded so only the methods reconcileObjects calls are implemented; any other call panics.
+	jobruntimes.Runtime
+
 	objsToApply      []apiruntime.ApplyConfiguration
 	objsToDelete     []client.Object
 	newObjectsErr    error
@@ -295,24 +296,6 @@ func (f *fakeRuntime) DeleteObjects(context.Context, *trainer.TrainJob) ([]clien
 	f.deleteObjectsCalled = true
 	return f.objsToDelete, f.deleteObjectsErr
 }
-
-func (f *fakeRuntime) RuntimeInfo(*trainer.TrainJob, any, *trainer.MLPolicy, *trainer.PodGroupPolicy) (*jobruntimes.Info, error) {
-	return nil, nil
-}
-
-func (f *fakeRuntime) TrainJobStatus(context.Context, *trainer.TrainJob) (*trainer.TrainJobStatus, error) {
-	return nil, nil
-}
-
-func (f *fakeRuntime) EventHandlerRegistrars() []jobruntimes.ReconcilerBuilder {
-	return nil
-}
-
-func (f *fakeRuntime) ValidateObjects(context.Context, *trainer.TrainJob, *trainer.TrainJob) (admission.Warnings, field.ErrorList) {
-	return nil, nil
-}
-
-var _ jobruntimes.Runtime = (*fakeRuntime)(nil)
 
 // TestReconcileObjects covers the branch between materializing new objects and cleaning up
 // stale ones in isolation, independently of any concrete plugin.
