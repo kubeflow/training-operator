@@ -429,6 +429,46 @@ func TestEnvVar(t *testing.T) {
 				),
 			),
 		},
+		"field ref with apiVersion": {
+			input: corev1.EnvVar{
+				Name: "POD_LABEL",
+				ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{
+						APIVersion: "v1",
+						FieldPath:  "metadata.labels['app']",
+					},
+				},
+			},
+			want: corev1ac.EnvVar().WithName("POD_LABEL").WithValueFrom(
+				corev1ac.EnvVarSource().WithFieldRef(
+					corev1ac.ObjectFieldSelector().
+						WithAPIVersion("v1").
+						WithFieldPath("metadata.labels['app']"),
+				),
+			),
+		},
+		"file key ref": {
+			input: corev1.EnvVar{
+				Name: "FROM_FILE",
+				ValueFrom: &corev1.EnvVarSource{
+					FileKeyRef: &corev1.FileKeySelector{
+						VolumeName: "config",
+						Path:       "env.file",
+						Key:        "FOO",
+						Optional:   ptr.To(true),
+					},
+				},
+			},
+			want: corev1ac.EnvVar().WithName("FROM_FILE").WithValueFrom(
+				corev1ac.EnvVarSource().WithFileKeyRef(
+					corev1ac.FileKeySelector().
+						WithVolumeName("config").
+						WithPath("env.file").
+						WithKey("FOO").
+						WithOptional(true),
+				),
+			),
+		},
 		"resource field ref": {
 			input: corev1.EnvVar{
 				Name: "CPU_REQUEST",

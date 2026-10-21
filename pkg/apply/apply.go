@@ -99,7 +99,11 @@ func EnvVar(e corev1.EnvVar) *corev1ac.EnvVarApplyConfiguration {
 	if from := e.ValueFrom; from != nil {
 		source := corev1ac.EnvVarSource()
 		if ref := from.FieldRef; ref != nil {
-			source.WithFieldRef(corev1ac.ObjectFieldSelector().WithFieldPath(ref.FieldPath))
+			field := corev1ac.ObjectFieldSelector().WithFieldPath(ref.FieldPath)
+			if ref.APIVersion != "" {
+				field.WithAPIVersion(ref.APIVersion)
+			}
+			source.WithFieldRef(field)
 		}
 		if ref := from.ResourceFieldRef; ref != nil {
 			source.WithResourceFieldRef(corev1ac.ResourceFieldSelector().
@@ -120,6 +124,16 @@ func EnvVar(e corev1.EnvVar) *corev1ac.EnvVarApplyConfiguration {
 				key.WithOptional(*optional)
 			}
 			source.WithSecretKeyRef(key)
+		}
+		if ref := from.FileKeyRef; ref != nil {
+			key := corev1ac.FileKeySelector().
+				WithVolumeName(ref.VolumeName).
+				WithPath(ref.Path).
+				WithKey(ref.Key)
+			if optional := ref.Optional; optional != nil {
+				key.WithOptional(*optional)
+			}
+			source.WithFileKeyRef(key)
 		}
 		envVar.WithValueFrom(source)
 	} else {
