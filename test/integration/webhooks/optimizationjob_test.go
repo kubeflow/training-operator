@@ -30,6 +30,7 @@ import (
 )
 
 var _ = ginkgo.Describe("OptimizationJob Webhook", ginkgo.Ordered, func() {
+	optimizationJobName := "optimization-job"
 	var ns *corev1.Namespace
 
 	ginkgo.BeforeAll(func() {
@@ -54,39 +55,52 @@ var _ = ginkgo.Describe("OptimizationJob Webhook", ginkgo.Ordered, func() {
 		gomega.Expect(k8sClient.DeleteAllOf(ctx, &trainer.OptimizationJob{}, client.InNamespace(ns.Name))).To(gomega.Succeed())
 	})
 
-	ginkgo.DescribeTable("validates the random search seed at admission",
-		func(seed *int64, errorMatcher gomega.OmegaMatcher) {
-			job := testingutil.MakeOptimizationJobWrapper(ns.Name, "optimization-job").
-				Objectives(trainer.Objective{
-					Metric:    "accuracy",
-					Direction: trainer.ObjectiveDirectionMaximize,
-				}).
-				SearchAlgorithm(&trainer.SearchAlgorithm{
-					Random: &trainer.RandomAlgorithm{Seed: seed},
-				}).
-				Parameters(trainer.Parameter{
-					Name: "lr",
-					SearchSpace: &trainer.SearchSpace{
-						Uniform: trainer.UniformSpace{
-							Min: "0.001",
-							Max: "0.1",
-						},
-					},
-				}).
-				NumTrials(1).
-				ParallelTrials(1).
-				TrainJobTemplate(trainer.TrainJobTemplateSpec{
-					Spec: trainer.TrainJobSpec{
-						RuntimeRef: trainer.RuntimeRef{Name: "runtime"},
-					},
-				}).
-				Obj()
-			gomega.Expect(k8sClient.Create(ctx, job)).Should(errorMatcher)
+	ginkgo.When("Creating OptimizationJob", func() {
+		ginkgo.DescribeTable("Validate OptimizationJob on creation", func(optimizationJob func() *trainer.OptimizationJob, errorMatcher gomega.OmegaMatcher) {
+			gomega.Expect(k8sClient.Create(ctx, optimizationJob())).Should(errorMatcher)
 		},
-		ginkgo.Entry("Should succeed without a seed", nil, gomega.Succeed()),
-		ginkgo.Entry("Should succeed with a zero seed", ptr.To[int64](0), gomega.Succeed()),
-		ginkgo.Entry("Should succeed with the maximum seed", ptr.To[int64](4294967295), gomega.Succeed()),
-		ginkgo.Entry("Should fail with a negative seed", ptr.To[int64](-1), testingutil.BeInvalidError()),
-		ginkgo.Entry("Should fail with a seed above the maximum", ptr.To[int64](4294967296), testingutil.BeInvalidError()),
-	)
+			ginkgo.Entry("Should succeed in creating optimizationJob without a random search seed",
+				func() *trainer.OptimizationJob {
+					return testingutil.MakeOptimizationJobWrapper(ns.Name, optimizationJobName).
+						Obj()
+				},
+				gomega.Succeed()),
+			ginkgo.Entry("Should succeed in creating optimizationJob with a zero random search seed",
+				func() *trainer.OptimizationJob {
+					return testingutil.MakeOptimizationJobWrapper(ns.Name, optimizationJobName).
+						SearchAlgorithm(&trainer.SearchAlgorithm{
+							Random: &trainer.RandomAlgorithm{Seed: ptr.To[int64](0)},
+						}).
+						Obj()
+				},
+				gomega.Succeed()),
+			ginkgo.Entry("Should succeed in creating optimizationJob with the maximum random search seed",
+				func() *trainer.OptimizationJob {
+					return testingutil.MakeOptimizationJobWrapper(ns.Name, optimizationJobName).
+						SearchAlgorithm(&trainer.SearchAlgorithm{
+							Random: &trainer.RandomAlgorithm{Seed: ptr.To[int64](4294967295)},
+						}).
+						Obj()
+				},
+				gomega.Succeed()),
+			ginkgo.Entry("Should fail in creating optimizationJob with a negative random search seed",
+				func() *trainer.OptimizationJob {
+					return testingutil.MakeOptimizationJobWrapper(ns.Name, optimizationJobName).
+						SearchAlgorithm(&trainer.SearchAlgorithm{
+							Random: &trainer.RandomAlgorithm{Seed: ptr.To[int64](-1)},
+						}).
+						Obj()
+				},
+				testingutil.BeInvalidError()),
+			ginkgo.Entry("Should fail in creating optimizationJob with a random search seed above the maximum",
+				func() *trainer.OptimizationJob {
+					return testingutil.MakeOptimizationJobWrapper(ns.Name, optimizationJobName).
+						SearchAlgorithm(&trainer.SearchAlgorithm{
+							Random: &trainer.RandomAlgorithm{Seed: ptr.To[int64](4294967296)},
+						}).
+						Obj()
+				},
+				testingutil.BeInvalidError()),
+		)
+	})
 })
