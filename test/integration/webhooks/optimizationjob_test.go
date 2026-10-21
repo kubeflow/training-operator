@@ -29,7 +29,7 @@ import (
 	"github.com/kubeflow/trainer/v2/test/integration/framework"
 )
 
-var _ = ginkgo.Describe("OptimizationJob random search seed validation", ginkgo.Ordered, func() {
+var _ = ginkgo.Describe("OptimizationJob Webhook", ginkgo.Ordered, func() {
 	var ns *corev1.Namespace
 
 	ginkgo.BeforeAll(func() {
@@ -44,7 +44,7 @@ var _ = ginkgo.Describe("OptimizationJob random search seed validation", ginkgo.
 	ginkgo.BeforeEach(func() {
 		ns = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName: "optimizationjob-seed-",
+				GenerateName: "optimizationjob-webhook-",
 			},
 		}
 		gomega.Expect(k8sClient.Create(ctx, ns)).To(gomega.Succeed())
