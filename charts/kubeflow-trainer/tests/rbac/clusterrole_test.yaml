@@ -30,7 +30,7 @@ tests:
           name: kubeflow-trainer-controller-manager
       # The manager only creates TrainJobs (from the OptimizationJob controller), so
       # `create` must not leak onto the runtime and OptimizationJob resources.
-      # Keep these rules in sync with manifests/base/rbac/role.yaml.
+      # The rules are generated from manifests/base/rbac/role.yaml by `make manifests`.
       - contains:
           path: rules
           content:

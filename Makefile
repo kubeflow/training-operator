@@ -181,6 +181,16 @@ manifests: controller-gen ## Generate manifests.
 	@# Copy the header-free CRDs into the chart before adding the kustomize (#)
 	@# header, so the chart templates can use the Helm-style license block.
 	cp -f manifests/base/crds/trainer.kubeflow.org_*.yaml $(TRAINER_CHART_DIR)/templates/crd/
+	@# Keep the chart's manager ClusterRole rules in sync with the generated role.
+	@{ cat $(HELM_BOILERPLATE_HEADER); echo; \
+		echo 'apiVersion: rbac.authorization.k8s.io/v1'; \
+		echo 'kind: ClusterRole'; \
+		echo 'metadata:'; \
+		echo '  name: {{ include "trainer.manager.clusterRole.name" . }}'; \
+		echo '  labels:'; \
+		echo '    {{- include "trainer.manager.labels" . | nindent 4 }}'; \
+		sed -n '/^rules:$$/,$$p' manifests/base/rbac/role.yaml; \
+	} > $(TRAINER_CHART_DIR)/templates/rbac/clusterrole.yaml
 	@for f in manifests/base/crds/trainer.kubeflow.org_*.yaml \
 			manifests/base/rbac/role.yaml \
 			manifests/base/webhook/manifests.yaml; do \
