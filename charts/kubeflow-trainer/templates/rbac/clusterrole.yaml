@@ -163,9 +163,7 @@ rules:
   - clustertrainingruntimes
   - optimizationjobs
   - trainingruntimes
-  - trainjobs
   verbs:
-  - create
   - get
   - list
   - patch
@@ -183,3 +181,14 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - trainer.kubeflow.org
+  resources:
+  - trainjobs
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch

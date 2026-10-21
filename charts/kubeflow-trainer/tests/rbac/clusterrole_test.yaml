@@ -28,7 +28,39 @@ tests:
           apiVersion: rbac.authorization.k8s.io/v1
           kind: ClusterRole
           name: kubeflow-trainer-controller-manager
+      # The manager only creates TrainJobs (from the OptimizationJob controller), so
+      # `create` must not leak onto the runtime and OptimizationJob resources.
+      # Keep these rules in sync with manifests/base/rbac/role.yaml.
       - contains:
+          path: rules
+          content:
+            apiGroups:
+              - trainer.kubeflow.org
+            resources:
+              - clustertrainingruntimes
+              - optimizationjobs
+              - trainingruntimes
+            verbs:
+              - get
+              - list
+              - patch
+              - update
+              - watch
+      - contains:
+          path: rules
+          content:
+            apiGroups:
+              - trainer.kubeflow.org
+            resources:
+              - trainjobs
+            verbs:
+              - create
+              - get
+              - list
+              - patch
+              - update
+              - watch
+      - notContains:
           path: rules
           content:
             apiGroups:
