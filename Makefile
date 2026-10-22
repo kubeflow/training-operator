@@ -196,6 +196,8 @@ manifests: controller-gen ## Generate manifests.
 	done
 
 .PHONY: generate
+# Match CI's exact Go version for generation and its prerequisites.
+generate: export GOTOOLCHAIN := go$(shell awk '/^go / {print $$2}' $(PROJECT_DIR)/go.mod)
 generate: go-mod-download manifests helm-docs ## Generate APIs.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate/boilerplate.go.txt" paths="./pkg/apis/..."
 	hack/update-codegen.sh
