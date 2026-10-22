@@ -28,6 +28,7 @@ import (
 // Trainer represents the desired configuration for the training job.
 // The Trainer spec will override the runtime template
 // which contains this label: `trainer.kubeflow.org/trainjob-ancestor-step: trainer`
+// For MPI runtimes that declare node groups, launcher and nodeGroups replace the other fields.
 type TrainerApplyConfiguration struct {
 	// image is the container image for the training container.
 	Image *string `json:"image,omitempty"`
@@ -57,6 +58,12 @@ type TrainerApplyConfiguration struct {
 	// For the MPI runtime only int value can be set to represent number of slots per node.
 	// For the Torch runtime the value defaults to `auto` and can be overridden with an int.
 	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
+	// launcher overrides the MPI launcher declared in the runtime mlPolicy.mpi.launcher.
+	// It can only be set for MPI runtimes that declare nodeGroups.
+	Launcher *MPILauncherOverrideApplyConfiguration `json:"launcher,omitempty"`
+	// nodeGroups overrides the MPI node groups declared in the runtime mlPolicy.mpi.nodeGroups.
+	// Every name must match the jobName of a node group in the runtime.
+	NodeGroups []MPINodeGroupOverrideApplyConfiguration `json:"nodeGroups,omitempty"`
 }
 
 // TrainerApplyConfiguration constructs a declarative configuration of the Trainer type for use with
@@ -140,5 +147,26 @@ func (b *TrainerApplyConfiguration) WithResourceClaimsPerNode(values ...*Trainer
 // If called multiple times, the NumProcPerNode field is set to the value of the last call.
 func (b *TrainerApplyConfiguration) WithNumProcPerNode(value int32) *TrainerApplyConfiguration {
 	b.NumProcPerNode = &value
+	return b
+}
+
+// WithLauncher sets the Launcher field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Launcher field is set to the value of the last call.
+func (b *TrainerApplyConfiguration) WithLauncher(value *MPILauncherOverrideApplyConfiguration) *TrainerApplyConfiguration {
+	b.Launcher = value
+	return b
+}
+
+// WithNodeGroups adds the given value to the NodeGroups field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the NodeGroups field.
+func (b *TrainerApplyConfiguration) WithNodeGroups(values ...*MPINodeGroupOverrideApplyConfiguration) *TrainerApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithNodeGroups")
+		}
+		b.NodeGroups = append(b.NodeGroups, *values[i])
+	}
 	return b
 }

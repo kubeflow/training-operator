@@ -33,6 +33,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from kubeflow_trainer_api.models.trainer_v1alpha1_mpi_launcher import TrainerV1alpha1MPILauncher
+from kubeflow_trainer_api.models.trainer_v1alpha1_mpi_node_group import TrainerV1alpha1MPINodeGroup
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -40,11 +42,13 @@ class TrainerV1alpha1MPIMLPolicySource(BaseModel):
     """
     MPIMLPolicySource represents a MPI runtime configuration.
     """ # noqa: E501
+    launcher: Optional[TrainerV1alpha1MPILauncher] = Field(default=None, description="launcher declares the replicatedJob that runs mpirun. It must be set together with nodeGroups. With launcher and nodeGroups, the MPI plugin finds the launcher and the node groups by jobName instead of the replicatedJob names `launcher` and `node`, and numProcPerNode is the default number of slots for the launcher and the node groups that do not set their own.")
     mpi_implementation: Optional[StrictStr] = Field(default=None, description="mpiImplementation is the name of the MPI implementation to create the appropriate hostfile. Defaults to OpenMPI.", alias="mpiImplementation")
+    node_groups: Optional[List[TrainerV1alpha1MPINodeGroup]] = Field(default=None, description="nodeGroups declares the replicatedJobs whose Pods are MPI hosts. Each group has its own number of nodes and slots, and its Pods get their own lines in the hostfile.", alias="nodeGroups")
     num_proc_per_node: Optional[StrictInt] = Field(default=None, description="numProcPerNode is the number of processes per node. This value is equal to the number of slots for each node in the hostfile. Defaults to 1.", alias="numProcPerNode")
     run_launcher_as_node: Optional[StrictBool] = Field(default=None, description="runLauncherAsNode defines whether to run training process on the launcher Job. Defaults to false.", alias="runLauncherAsNode")
     ssh_auth_mount_path: Optional[StrictStr] = Field(default=None, description="sshAuthMountPath is the directory where SSH keys are mounted. Defaults to /root/.ssh.", alias="sshAuthMountPath")
-    __properties: ClassVar[List[str]] = ["mpiImplementation", "numProcPerNode", "runLauncherAsNode", "sshAuthMountPath"]
+    __properties: ClassVar[List[str]] = ["launcher", "mpiImplementation", "nodeGroups", "numProcPerNode", "runLauncherAsNode", "sshAuthMountPath"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -85,6 +89,16 @@ class TrainerV1alpha1MPIMLPolicySource(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of launcher
+        if self.launcher:
+            _dict['launcher'] = self.launcher.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in node_groups (list)
+        _items = []
+        if self.node_groups:
+            for _item_node_groups in self.node_groups:
+                if _item_node_groups:
+                    _items.append(_item_node_groups.to_dict())
+            _dict['nodeGroups'] = _items
         return _dict
 
     @classmethod
@@ -97,7 +111,9 @@ class TrainerV1alpha1MPIMLPolicySource(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "launcher": TrainerV1alpha1MPILauncher.from_dict(obj["launcher"]) if obj.get("launcher") is not None else None,
             "mpiImplementation": obj.get("mpiImplementation"),
+            "nodeGroups": [TrainerV1alpha1MPINodeGroup.from_dict(_item) for _item in obj["nodeGroups"]] if obj.get("nodeGroups") is not None else None,
             "numProcPerNode": obj.get("numProcPerNode"),
             "runLauncherAsNode": obj.get("runLauncherAsNode"),
             "sshAuthMountPath": obj.get("sshAuthMountPath")

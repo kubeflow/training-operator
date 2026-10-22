@@ -35,23 +35,27 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from kubeflow_trainer_api.models.io_k8s_api_core_v1_env_var import IoK8sApiCoreV1EnvVar
 from kubeflow_trainer_api.models.io_k8s_api_core_v1_resource_requirements import IoK8sApiCoreV1ResourceRequirements
+from kubeflow_trainer_api.models.trainer_v1alpha1_mpi_launcher_override import TrainerV1alpha1MPILauncherOverride
+from kubeflow_trainer_api.models.trainer_v1alpha1_mpi_node_group_override import TrainerV1alpha1MPINodeGroupOverride
 from kubeflow_trainer_api.models.trainer_v1alpha1_trainer_resource_claim import TrainerV1alpha1TrainerResourceClaim
 from typing import Optional, Set
 from typing_extensions import Self
 
 class TrainerV1alpha1Trainer(BaseModel):
     """
-    Trainer represents the desired configuration for the training job. The Trainer spec will override the runtime template which contains this label: `trainer.kubeflow.org/trainjob-ancestor-step: trainer`
+    Trainer represents the desired configuration for the training job. The Trainer spec will override the runtime template which contains this label: `trainer.kubeflow.org/trainjob-ancestor-step: trainer` For MPI runtimes that declare node groups, launcher and nodeGroups replace the other fields.
     """ # noqa: E501
     args: Optional[List[StrictStr]] = Field(default=None, description="args for the entrypoint for the training container.")
     command: Optional[List[StrictStr]] = Field(default=None, description="command for the entrypoint of the training container.")
     env: Optional[List[IoK8sApiCoreV1EnvVar]] = Field(default=None, description="env is the list of environment variables to set in the training container. These values will be merged with the TrainingRuntime's trainer environments.")
     image: Optional[StrictStr] = Field(default=None, description="image is the container image for the training container.")
+    launcher: Optional[TrainerV1alpha1MPILauncherOverride] = Field(default=None, description="launcher overrides the MPI launcher declared in the runtime mlPolicy.mpi.launcher. It can only be set for MPI runtimes that declare nodeGroups.")
+    node_groups: Optional[List[TrainerV1alpha1MPINodeGroupOverride]] = Field(default=None, description="nodeGroups overrides the MPI node groups declared in the runtime mlPolicy.mpi.nodeGroups. Every name must match the jobName of a node group in the runtime.", alias="nodeGroups")
     num_nodes: Optional[StrictInt] = Field(default=None, description="numNodes is the number of training nodes.", alias="numNodes")
     num_proc_per_node: Optional[StrictInt] = Field(default=None, description="numProcPerNode is the number of processes/workers/slots on every training node. For the MPI runtime only int value can be set to represent number of slots per node. For the Torch runtime the value defaults to `auto` and can be overridden with an int.", alias="numProcPerNode")
     resource_claims_per_node: Optional[List[TrainerV1alpha1TrainerResourceClaim]] = Field(default=None, description="resourceClaimsPerNode defines the DRA ResourceClaims for each training node. These claims are added to the trainer node Pod's resourceClaims and automatically referenced in the node container's resources.claims. To attach a claim to another container (sidecar or init), use the runtimePatches API. Claims are merged by name. For a claim of the same name, this field takes precedence over runtimePatches, which take precedence over the runtime template, matching how resourcesPerNode overrides patched requests and limits. This is an alpha feature and requires enabling the TrainJobDynamicResourceAllocation feature gate. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/", alias="resourceClaimsPerNode")
     resources_per_node: Optional[IoK8sApiCoreV1ResourceRequirements] = Field(default=None, description="resourcesPerNode defines the compute resources for each training node.", alias="resourcesPerNode")
-    __properties: ClassVar[List[str]] = ["args", "command", "env", "image", "numNodes", "numProcPerNode", "resourceClaimsPerNode", "resourcesPerNode"]
+    __properties: ClassVar[List[str]] = ["args", "command", "env", "image", "launcher", "nodeGroups", "numNodes", "numProcPerNode", "resourceClaimsPerNode", "resourcesPerNode"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -99,6 +103,16 @@ class TrainerV1alpha1Trainer(BaseModel):
                 if _item_env:
                     _items.append(_item_env.to_dict())
             _dict['env'] = _items
+        # override the default output from pydantic by calling `to_dict()` of launcher
+        if self.launcher:
+            _dict['launcher'] = self.launcher.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in node_groups (list)
+        _items = []
+        if self.node_groups:
+            for _item_node_groups in self.node_groups:
+                if _item_node_groups:
+                    _items.append(_item_node_groups.to_dict())
+            _dict['nodeGroups'] = _items
         # override the default output from pydantic by calling `to_dict()` of each item in resource_claims_per_node (list)
         _items = []
         if self.resource_claims_per_node:
@@ -125,6 +139,8 @@ class TrainerV1alpha1Trainer(BaseModel):
             "command": obj.get("command"),
             "env": [IoK8sApiCoreV1EnvVar.from_dict(_item) for _item in obj["env"]] if obj.get("env") is not None else None,
             "image": obj.get("image"),
+            "launcher": TrainerV1alpha1MPILauncherOverride.from_dict(obj["launcher"]) if obj.get("launcher") is not None else None,
+            "nodeGroups": [TrainerV1alpha1MPINodeGroupOverride.from_dict(_item) for _item in obj["nodeGroups"]] if obj.get("nodeGroups") is not None else None,
             "numNodes": obj.get("numNodes"),
             "numProcPerNode": obj.get("numProcPerNode"),
             "resourceClaimsPerNode": [TrainerV1alpha1TrainerResourceClaim.from_dict(_item) for _item in obj["resourceClaimsPerNode"]] if obj.get("resourceClaimsPerNode") is not None else None,

@@ -271,6 +271,9 @@ type JAXMLPolicySource struct{}
 type XGBoostMLPolicySource struct{}
 
 // MPIMLPolicySource represents a MPI runtime configuration.
+// +kubebuilder:validation:XValidation:rule="has(self.launcher) == has(self.nodeGroups)",message="launcher and nodeGroups must be set together"
+// +kubebuilder:validation:XValidation:rule="!has(self.launcher) || !has(self.runLauncherAsNode) || !self.runLauncherAsNode",message="runLauncherAsNode must not be set with launcher, use launcher.runAsNode instead"
+// +kubebuilder:validation:XValidation:rule="!has(self.launcher) || !has(self.nodeGroups) || self.nodeGroups.all(g, g.jobName != self.launcher.jobName)",message="a replicatedJob cannot be both the launcher and a node group"
 type MPIMLPolicySource struct {
 	// numProcPerNode is the number of processes per node.
 	// This value is equal to the number of slots for each node in the hostfile.
@@ -299,6 +302,86 @@ type MPIMLPolicySource struct {
 	// +kubebuilder:default=false
 	// +optional
 	RunLauncherAsNode *bool `json:"runLauncherAsNode,omitempty"`
+
+	// launcher declares the replicatedJob that runs mpirun. It must be set together with nodeGroups.
+	// With launcher and nodeGroups, the MPI plugin finds the launcher and the node groups by
+	// jobName instead of the replicatedJob names `launcher` and `node`, and numProcPerNode is
+	// the default number of slots for the launcher and the node groups that do not set their own.
+	// +optional
+	Launcher MPILauncher `json:"launcher,omitempty,omitzero"`
+
+	// nodeGroups declares the replicatedJobs whose Pods are MPI hosts. Each group has its own
+	// number of nodes and slots, and its Pods get their own lines in the hostfile.
+	// +listType=map
+	// +listMapKey=jobName
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=32
+	// +optional
+	NodeGroups []MPINodeGroup `json:"nodeGroups,omitempty"`
+}
+
+// MPILauncher references the replicatedJob that runs mpirun.
+// +kubebuilder:validation:XValidation:rule="!has(self.numProcPerNode) || (has(self.runAsNode) && self.runAsNode)",message="numProcPerNode requires runAsNode"
+type MPILauncher struct {
+	// jobName is the name of the launcher replicatedJob.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +required
+	JobName string `json:"jobName,omitempty"`
+
+	// containerName is the name of the container that runs mpirun.
+	// Defaults to node.
+	// +kubebuilder:default=node
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +optional
+	ContainerName string `json:"containerName,omitempty"`
+
+	// runAsNode defines whether the launcher is also an MPI host and gets a line in the hostfile.
+	// It replaces runLauncherAsNode for runtimes with nodeGroups.
+	// Defaults to false.
+	// +kubebuilder:default=false
+	// +optional
+	RunAsNode *bool `json:"runAsNode,omitempty"`
+
+	// numProcPerNode is the number of slots of the launcher when runAsNode is true.
+	// Defaults to mlPolicy.mpi.numProcPerNode.
+	// +kubebuilder:validation:XValidation:rule="self >= 1",message="numProcPerNode must be greater than or equal to 1"
+	// +optional
+	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
+}
+
+// MPINodeGroup references a replicatedJob whose Pods are MPI hosts.
+type MPINodeGroup struct {
+	// jobName is the name of the replicatedJob.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +required
+	JobName string `json:"jobName,omitempty"`
+
+	// containerName is the name of the container that runs the SSH server of the MPI host.
+	// Defaults to node.
+	// +kubebuilder:default=node
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +optional
+	ContainerName string `json:"containerName,omitempty"`
+
+	// numNodes is the number of Pods of the group, each one an MPI host.
+	// A group with 0 nodes is left out of the JobSet unless a TrainJob enables it,
+	// so a runtime can offer groups that TrainJobs opt into.
+	// Defaults to 1.
+	// +kubebuilder:default=1
+	// +kubebuilder:validation:Minimum=0
+	// +optional
+	NumNodes *int32 `json:"numNodes,omitempty"`
+
+	// numProcPerNode is the number of slots of each host in the group.
+	// Defaults to mlPolicy.mpi.numProcPerNode. When it resolves to 1 and the group container
+	// requests more than one GPU, the number of GPUs is used instead.
+	// +kubebuilder:validation:XValidation:rule="self >= 1",message="numProcPerNode must be greater than or equal to 1"
+	// +optional
+	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
 }
 
 // FluxMLPolicySource represents a Flux HPC runtime configuration.

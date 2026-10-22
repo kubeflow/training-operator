@@ -307,6 +307,56 @@ var _ = ginkgo.Describe("TrainingRuntime marker validations and defaulting", gin
 				},
 				gomega.MatchError(gomega.ContainSubstring("references resourceClaim \"gpu\" which is not defined in the Pod's resourceClaims")),
 			),
+			ginkgo.Entry("Should succeed to create trainingRuntime with MPI node groups",
+				func() *trainer.TrainingRuntime {
+					return testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "runtime")
+				},
+				gomega.Succeed()),
+			ginkgo.Entry("Should fail to create trainingRuntime with an MPI launcher but no node groups",
+				func() *trainer.TrainingRuntime {
+					runtime := testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "runtime")
+					runtime.Spec.MLPolicy.MPI.NodeGroups = nil
+					return runtime
+				},
+				testingutil.BeInvalidError()),
+			ginkgo.Entry("Should fail to create trainingRuntime with both an MPI launcher and runLauncherAsNode",
+				func() *trainer.TrainingRuntime {
+					runtime := testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "runtime")
+					runtime.Spec.MLPolicy.MPI.RunLauncherAsNode = ptr.To(true)
+					return runtime
+				},
+				testingutil.BeInvalidError()),
+			ginkgo.Entry("Should fail to create trainingRuntime with an MPI launcher that is also a node group",
+				func() *trainer.TrainingRuntime {
+					runtime := testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "runtime")
+					runtime.Spec.MLPolicy.MPI.NodeGroups[0].JobName = constants.Launcher
+					return runtime
+				},
+				testingutil.BeInvalidError()),
+			ginkgo.Entry("Should fail to create trainingRuntime with launcher numProcPerNode but no runAsNode",
+				func() *trainer.TrainingRuntime {
+					runtime := testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "runtime")
+					runtime.Spec.MLPolicy.MPI.Launcher.RunAsNode = ptr.To(false)
+					runtime.Spec.MLPolicy.MPI.Launcher.NumProcPerNode = ptr.To[int32](2)
+					return runtime
+				},
+				testingutil.BeInvalidError()),
+			ginkgo.Entry("Should fail to create trainingRuntime with an MPI node group without a replicatedJob",
+				func() *trainer.TrainingRuntime {
+					runtime := testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "runtime")
+					runtime.Spec.MLPolicy.MPI.NodeGroups[1].JobName = "h100"
+					return runtime
+				},
+				gomega.MatchError(gomega.ContainSubstring("must match the name of a replicatedJob in spec.template.spec.replicatedJobs"))),
+			ginkgo.Entry("Should fail to create trainingRuntime with MPI node groups and the trainer ancestor label",
+				func() *trainer.TrainingRuntime {
+					runtime := testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "runtime")
+					runtime.Spec.Template.Spec.ReplicatedJobs[2].Template.Labels = map[string]string{
+						constants.LabelTrainJobAncestor: constants.AncestorTrainer,
+					}
+					return runtime
+				},
+				gomega.MatchError(gomega.ContainSubstring("must not be set when mlPolicy.mpi.launcher is set"))),
 		)
 		ginkgo.DescribeTable("Defaulting TrainingRuntime on creation", func(trainingRuntime func() *trainer.TrainingRuntime, wantTrainingRuntime func() *trainer.TrainingRuntime) {
 			created := trainingRuntime()

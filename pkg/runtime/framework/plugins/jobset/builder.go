@@ -157,6 +157,39 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *trainer.TrainJob) *Build
 	return b
 }
 
+// MPIGroups applies the TrainJob launcher and node group overrides of an MPI runtime that declares
+// node groups to the MPI container of each group, leaving the other containers untouched.
+// The resources are merged when the runtime Info is built.
+func (b *Builder) MPIGroups(info *runtime.Info, trainJob *trainer.TrainJob) *Builder {
+	if info == nil || info.RuntimePolicy.MLPolicySource == nil {
+		return b
+	}
+	groups := runtime.MPIGroups(info.RuntimePolicy.MLPolicySource.MPI, trainJob.Spec.Trainer)
+	for i, rJob := range b.Spec.ReplicatedJobs {
+		group := runtime.FindMPIGroup(groups, ptr.Deref(rJob.Name, ""))
+		if group == nil || group.Override == nil {
+			continue
+		}
+		for j, container := range rJob.Template.Spec.Template.Spec.Containers {
+			if ptr.Deref(container.Name, "") != group.ContainerName {
+				continue
+			}
+			mpiContainer := &b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j]
+			if image := group.Override.Image; image != nil {
+				mpiContainer.Image = image
+			}
+			if command := group.Override.Command; command != nil {
+				mpiContainer.Command = command
+			}
+			if args := group.Override.Args; args != nil {
+				mpiContainer.Args = args
+			}
+			apply.UpsertEnvVars(&mpiContainer.Env, apply.EnvVars(group.Override.Env...)...)
+		}
+	}
+	return b
+}
+
 // TODO: Supporting merge labels would be great.
 
 func (b *Builder) PodLabels(labels map[string]string) *Builder {

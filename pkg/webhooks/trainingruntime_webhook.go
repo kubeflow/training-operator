@@ -17,8 +17,10 @@ limitations under the License.
 package webhooks
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -37,6 +39,11 @@ const (
 	rJobReplicasErrorMsg       = "always must be 1"
 	rJobContainerNamesErrorMsg = "must contain the required container for the ancestor: %s"
 	rJobContainerClaimErrorMsg = "references resourceClaim %q which is not defined in the Pod's resourceClaims"
+	mpiGroupJobNameErrorMsg    = "must match the name of a replicatedJob in spec.template.spec.replicatedJobs"
+	mpiGroupContainerErrorMsg  = "must match the name of a container in the replicatedJob %s"
+	mpiGroupReplicasErrorMsg   = "must have 1 replica, since the replicatedJob %s is an MPI launcher or node group"
+	mpiGroupAncestorErrorMsg   = "must not be set when mlPolicy.mpi.launcher is set, since the launcher is the trainer step"
+	mpiGroupNumNodesErrorMsg   = "must not be set when mlPolicy.mpi.nodeGroups is set, set numNodes per node group instead"
 )
 
 var (
@@ -71,7 +78,58 @@ func (w *TrainingRuntimeValidator) ValidateCreate(ctx context.Context, obj *trai
 			constants.RuntimeDeprecationPolicyURL,
 		))
 	}
-	return warnings, validateReplicatedJobs(obj.Spec.Template.Spec.ReplicatedJobs).ToAggregate()
+	return warnings, validateRuntimeSpec(&obj.Spec).ToAggregate()
+}
+
+// validateRuntimeSpec validates the spec shared by TrainingRuntime and ClusterTrainingRuntime.
+func validateRuntimeSpec(spec *trainer.TrainingRuntimeSpec) field.ErrorList {
+	allErrs := validateReplicatedJobs(spec.Template.Spec.ReplicatedJobs)
+	return append(allErrs, validateMPINodeGroups(spec)...)
+}
+
+// validateMPINodeGroups validates that the MPI launcher and node groups reference existing
+// replicatedJobs and containers. The launcher is found by name, so the replicatedJobs must not
+// carry the trainer ancestor label, and numNodes is set per node group.
+func validateMPINodeGroups(spec *trainer.TrainingRuntimeSpec) field.ErrorList {
+	if spec.MLPolicy == nil || spec.MLPolicy.MPI == nil || spec.MLPolicy.MPI.Launcher.JobName == "" {
+		return nil
+	}
+	var allErrs field.ErrorList
+	mpi := spec.MLPolicy.MPI
+	mpiPath := field.NewPath("spec", "mlPolicy", "mpi")
+	if spec.MLPolicy.NumNodes != nil {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "mlPolicy", "numNodes"), mpiGroupNumNodesErrorMsg))
+	}
+	rJobs := make(map[string]*jobsetv1alpha2.ReplicatedJob, len(spec.Template.Spec.ReplicatedJobs))
+	for i := range spec.Template.Spec.ReplicatedJobs {
+		rJobs[spec.Template.Spec.ReplicatedJobs[i].Name] = &spec.Template.Spec.ReplicatedJobs[i]
+	}
+	validateGroup := func(path *field.Path, jobName, containerName string) {
+		rJob, ok := rJobs[jobName]
+		if !ok {
+			allErrs = append(allErrs, field.Invalid(path.Child("jobName"), jobName, mpiGroupJobNameErrorMsg))
+			return
+		}
+		if rJob.Replicas != 1 {
+			allErrs = append(allErrs, field.Invalid(path.Child("jobName"), jobName, fmt.Sprintf(mpiGroupReplicasErrorMsg, jobName)))
+		}
+		name := cmp.Or(containerName, constants.Node)
+		if !slices.ContainsFunc(rJob.Template.Spec.Template.Spec.Containers, func(c corev1.Container) bool { return c.Name == name }) {
+			allErrs = append(allErrs, field.Invalid(path.Child("containerName"), name, fmt.Sprintf(mpiGroupContainerErrorMsg, jobName)))
+		}
+	}
+	validateGroup(mpiPath.Child("launcher"), mpi.Launcher.JobName, mpi.Launcher.ContainerName)
+	for i, nodeGroup := range mpi.NodeGroups {
+		validateGroup(mpiPath.Child("nodeGroups").Index(i), nodeGroup.JobName, nodeGroup.ContainerName)
+	}
+	rJobsPath := field.NewPath("spec", "template", "spec", "replicatedJobs")
+	for idx, rJob := range spec.Template.Spec.ReplicatedJobs {
+		if rJob.Template.Labels[constants.LabelTrainJobAncestor] == constants.AncestorTrainer {
+			allErrs = append(allErrs, field.Forbidden(
+				rJobsPath.Index(idx).Child("template", "metadata", "labels").Key(constants.LabelTrainJobAncestor), mpiGroupAncestorErrorMsg))
+		}
+	}
+	return allErrs
 }
 
 func validateReplicatedJobs(rJobs []jobsetv1alpha2.ReplicatedJob) field.ErrorList {
@@ -140,7 +198,7 @@ func validateReplicatedJobs(rJobs []jobsetv1alpha2.ReplicatedJob) field.ErrorLis
 func (w *TrainingRuntimeValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *trainer.TrainingRuntime) (admission.Warnings, error) {
 	log := ctrl.LoggerFrom(ctx).WithName("trainingruntime-webhook")
 	log.V(5).Info("Validating update", "trainingRuntime", klog.KObj(newObj))
-	return nil, validateReplicatedJobs(newObj.Spec.Template.Spec.ReplicatedJobs).ToAggregate()
+	return nil, validateRuntimeSpec(&newObj.Spec).ToAggregate()
 }
 
 func (w *TrainingRuntimeValidator) ValidateDelete(ctx context.Context, obj *trainer.TrainingRuntime) (admission.Warnings, error) {

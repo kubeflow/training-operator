@@ -15153,13 +15153,163 @@
           }
         }
       },
+      "trainer.v1alpha1.MPIGroupOverride": {
+        "description": "MPIGroupOverride holds the fields shared by the MPI launcher and node group overrides. The container fields apply only to the container named by containerName in the runtime, so sidecars and init containers are left untouched.",
+        "type": "object",
+        "properties": {
+          "args": {
+            "description": "args for the entrypoint of the MPI container of the group.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "x-kubernetes-list-type": "atomic"
+          },
+          "command": {
+            "description": "command for the entrypoint of the MPI container of the group.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "x-kubernetes-list-type": "atomic"
+          },
+          "env": {
+            "description": "env is the list of environment variables to set in the MPI container of the group. These values will be merged with the environments of the container in the runtime. MPI ranks started over SSH do not inherit the environment of a node group container, so variables for the ranks belong on the launcher, for example with `mpirun -x`.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/io.k8s.api.core.v1.EnvVar"
+            },
+            "x-kubernetes-list-map-keys": [
+              "name"
+            ],
+            "x-kubernetes-list-type": "map"
+          },
+          "image": {
+            "description": "image is the container image for the MPI container of the group.",
+            "type": "string"
+          },
+          "numProcPerNode": {
+            "description": "numProcPerNode overrides the number of slots of each host in the group.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "resourcesPerNode": {
+            "description": "resourcesPerNode defines the compute resources for each Pod of the group.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/io.k8s.api.core.v1.ResourceRequirements"
+              }
+            ]
+          }
+        }
+      },
+      "trainer.v1alpha1.MPILauncher": {
+        "description": "MPILauncher references the replicatedJob that runs mpirun.",
+        "type": "object",
+        "required": [
+          "jobName"
+        ],
+        "properties": {
+          "containerName": {
+            "description": "containerName is the name of the container that runs mpirun. Defaults to node.",
+            "type": "string"
+          },
+          "jobName": {
+            "description": "jobName is the name of the launcher replicatedJob.",
+            "type": "string"
+          },
+          "numProcPerNode": {
+            "description": "numProcPerNode is the number of slots of the launcher when runAsNode is true. Defaults to mlPolicy.mpi.numProcPerNode.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "runAsNode": {
+            "description": "runAsNode defines whether the launcher is also an MPI host and gets a line in the hostfile. It replaces runLauncherAsNode for runtimes with nodeGroups. Defaults to false.",
+            "type": "boolean"
+          }
+        }
+      },
+      "trainer.v1alpha1.MPILauncherOverride": {
+        "description": "MPILauncherOverride overrides the MPI launcher of the runtime.",
+        "type": "object",
+        "properties": {
+          "args": {
+            "description": "args for the entrypoint of the MPI container of the group.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "x-kubernetes-list-type": "atomic"
+          },
+          "command": {
+            "description": "command for the entrypoint of the MPI container of the group.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "x-kubernetes-list-type": "atomic"
+          },
+          "env": {
+            "description": "env is the list of environment variables to set in the MPI container of the group. These values will be merged with the environments of the container in the runtime. MPI ranks started over SSH do not inherit the environment of a node group container, so variables for the ranks belong on the launcher, for example with `mpirun -x`.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/io.k8s.api.core.v1.EnvVar"
+            },
+            "x-kubernetes-list-map-keys": [
+              "name"
+            ],
+            "x-kubernetes-list-type": "map"
+          },
+          "image": {
+            "description": "image is the container image for the MPI container of the group.",
+            "type": "string"
+          },
+          "numProcPerNode": {
+            "description": "numProcPerNode overrides the number of slots of each host in the group.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "resourcesPerNode": {
+            "description": "resourcesPerNode defines the compute resources for each Pod of the group.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/io.k8s.api.core.v1.ResourceRequirements"
+              }
+            ]
+          },
+          "runAsNode": {
+            "description": "runAsNode overrides mlPolicy.mpi.launcher.runAsNode.",
+            "type": "boolean"
+          }
+        }
+      },
       "trainer.v1alpha1.MPIMLPolicySource": {
         "description": "MPIMLPolicySource represents a MPI runtime configuration.",
         "type": "object",
         "properties": {
+          "launcher": {
+            "description": "launcher declares the replicatedJob that runs mpirun. It must be set together with nodeGroups. With launcher and nodeGroups, the MPI plugin finds the launcher and the node groups by jobName instead of the replicatedJob names `launcher` and `node`, and numProcPerNode is the default number of slots for the launcher and the node groups that do not set their own.",
+            "default": {},
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/trainer.v1alpha1.MPILauncher"
+              }
+            ]
+          },
           "mpiImplementation": {
             "description": "mpiImplementation is the name of the MPI implementation to create the appropriate hostfile. Defaults to OpenMPI.",
             "type": "string"
+          },
+          "nodeGroups": {
+            "description": "nodeGroups declares the replicatedJobs whose Pods are MPI hosts. Each group has its own number of nodes and slots, and its Pods get their own lines in the hostfile.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/trainer.v1alpha1.MPINodeGroup"
+            },
+            "x-kubernetes-list-map-keys": [
+              "jobName"
+            ],
+            "x-kubernetes-list-type": "map"
           },
           "numProcPerNode": {
             "description": "numProcPerNode is the number of processes per node. This value is equal to the number of slots for each node in the hostfile. Defaults to 1.",
@@ -15173,6 +15323,95 @@
           "sshAuthMountPath": {
             "description": "sshAuthMountPath is the directory where SSH keys are mounted. Defaults to /root/.ssh.",
             "type": "string"
+          }
+        }
+      },
+      "trainer.v1alpha1.MPINodeGroup": {
+        "description": "MPINodeGroup references a replicatedJob whose Pods are MPI hosts.",
+        "type": "object",
+        "required": [
+          "jobName"
+        ],
+        "properties": {
+          "containerName": {
+            "description": "containerName is the name of the container that runs the SSH server of the MPI host. Defaults to node.",
+            "type": "string"
+          },
+          "jobName": {
+            "description": "jobName is the name of the replicatedJob.",
+            "type": "string"
+          },
+          "numNodes": {
+            "description": "numNodes is the number of Pods of the group, each one an MPI host. A group with 0 nodes is left out of the JobSet unless a TrainJob enables it, so a runtime can offer groups that TrainJobs opt into. Defaults to 1.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "numProcPerNode": {
+            "description": "numProcPerNode is the number of slots of each host in the group. Defaults to mlPolicy.mpi.numProcPerNode. When it resolves to 1 and the group container requests more than one GPU, the number of GPUs is used instead.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "trainer.v1alpha1.MPINodeGroupOverride": {
+        "description": "MPINodeGroupOverride overrides one MPI node group of the runtime.",
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "args": {
+            "description": "args for the entrypoint of the MPI container of the group.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "x-kubernetes-list-type": "atomic"
+          },
+          "command": {
+            "description": "command for the entrypoint of the MPI container of the group.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "x-kubernetes-list-type": "atomic"
+          },
+          "env": {
+            "description": "env is the list of environment variables to set in the MPI container of the group. These values will be merged with the environments of the container in the runtime. MPI ranks started over SSH do not inherit the environment of a node group container, so variables for the ranks belong on the launcher, for example with `mpirun -x`.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/io.k8s.api.core.v1.EnvVar"
+            },
+            "x-kubernetes-list-map-keys": [
+              "name"
+            ],
+            "x-kubernetes-list-type": "map"
+          },
+          "image": {
+            "description": "image is the container image for the MPI container of the group.",
+            "type": "string"
+          },
+          "name": {
+            "description": "name is the jobName of a node group in the runtime mlPolicy.mpi.nodeGroups.",
+            "type": "string"
+          },
+          "numNodes": {
+            "description": "numNodes overrides the number of Pods of the group. 0 disables the group.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "numProcPerNode": {
+            "description": "numProcPerNode overrides the number of slots of each host in the group.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "resourcesPerNode": {
+            "description": "resourcesPerNode defines the compute resources for each Pod of the group.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/io.k8s.api.core.v1.ResourceRequirements"
+              }
+            ]
           }
         }
       },
@@ -15987,7 +16226,7 @@
         }
       },
       "trainer.v1alpha1.Trainer": {
-        "description": "Trainer represents the desired configuration for the training job. The Trainer spec will override the runtime template which contains this label: `trainer.kubeflow.org/trainjob-ancestor-step: trainer`",
+        "description": "Trainer represents the desired configuration for the training job. The Trainer spec will override the runtime template which contains this label: `trainer.kubeflow.org/trainjob-ancestor-step: trainer` For MPI runtimes that declare node groups, launcher and nodeGroups replace the other fields.",
         "type": "object",
         "properties": {
           "args": {
@@ -16020,6 +16259,25 @@
           "image": {
             "description": "image is the container image for the training container.",
             "type": "string"
+          },
+          "launcher": {
+            "description": "launcher overrides the MPI launcher declared in the runtime mlPolicy.mpi.launcher. It can only be set for MPI runtimes that declare nodeGroups.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/trainer.v1alpha1.MPILauncherOverride"
+              }
+            ]
+          },
+          "nodeGroups": {
+            "description": "nodeGroups overrides the MPI node groups declared in the runtime mlPolicy.mpi.nodeGroups. Every name must match the jobName of a node group in the runtime.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/trainer.v1alpha1.MPINodeGroupOverride"
+            },
+            "x-kubernetes-list-map-keys": [
+              "name"
+            ],
+            "x-kubernetes-list-type": "map"
           },
           "numNodes": {
             "description": "numNodes is the number of training nodes.",

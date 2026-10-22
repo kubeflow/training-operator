@@ -1858,6 +1858,57 @@ alpha-node-0-1.alpha slots=8
 			})
 		})
 
+		ginkgo.Context("Integration Tests for the OpenMPI Runtime with node groups", func() {
+			ginkgo.It("Should create a Job per enabled node group with its own slots in the hostfile", func() {
+				ginkgo.By("Creating an OpenMPI TrainingRuntime with node groups and a TrainJob that enables the l40s group")
+				trainingRuntime = testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "node-groups")
+				trainJob = testingutil.MakeTrainJobWrapper(ns.Name, "mixed").
+					RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "node-groups").
+					Trainer(&trainer.Trainer{
+						Launcher: &trainer.MPILauncherOverride{MPIGroupOverride: trainer.MPIGroupOverride{Command: []string{"mpirun", "hostname"}}},
+						NodeGroups: []trainer.MPINodeGroupOverride{{
+							Name:             "l40s",
+							NumNodes:         ptr.To[int32](2),
+							MPIGroupOverride: trainer.MPIGroupOverride{Image: ptr.To("mpi-app:cuda-v2")},
+						}},
+					}).
+					Obj()
+				trainJobKey = client.ObjectKeyFromObject(trainJob)
+				gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
+				gomega.Eventually(func(g gomega.Gomega) {
+					g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(trainingRuntime), trainingRuntime)).Should(gomega.Succeed())
+				}, util.Timeout, util.Interval).Should(gomega.Succeed())
+				gomega.Expect(k8sClient.Create(ctx, trainJob)).Should(gomega.Succeed())
+
+				ginkgo.By("Checking that the JobSet keeps the launcher and the enabled l40s group only")
+				gomega.Eventually(func(g gomega.Gomega) {
+					jobSet := &jobsetv1alpha2.JobSet{}
+					g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).Should(gomega.Succeed())
+					var rJobNames []string
+					for _, rJob := range jobSet.Spec.ReplicatedJobs {
+						rJobNames = append(rJobNames, rJob.Name)
+					}
+					g.Expect(rJobNames).Should(gomega.Equal([]string{"l40s", constants.Launcher}))
+					l40s := jobSet.Spec.ReplicatedJobs[0].Template.Spec
+					g.Expect(l40s.Parallelism).Should(gomega.Equal(ptr.To[int32](2)))
+					g.Expect(l40s.Template.Spec.Containers[0].Image).Should(gomega.Equal("mpi-app:cuda-v2"))
+					g.Expect(l40s.Template.Spec.Containers[1].Image).Should(gomega.Equal("mpi-app:cuda"))
+					launcher := jobSet.Spec.ReplicatedJobs[1]
+					g.Expect(launcher.DependsOn).Should(gomega.Equal([]jobsetv1alpha2.DependsOn{{Name: "l40s", Status: jobsetv1alpha2.DependencyReady}}))
+					g.Expect(launcher.Template.Spec.Template.Spec.Containers[0].Command).Should(gomega.Equal([]string{"mpirun", "hostname"}))
+				}, util.Timeout, util.Interval).Should(gomega.Succeed())
+
+				ginkgo.By("Checking that the hostfile lists the l40s Pods and the launcher")
+				gomega.Eventually(func(g gomega.Gomega) {
+					cm := &corev1.ConfigMap{}
+					cmKey := client.ObjectKey{Namespace: ns.Name, Name: fmt.Sprintf("%s%s", trainJobKey.Name, constants.MPIHostfileConfigMapSuffix)}
+					g.Expect(k8sClient.Get(ctx, cmKey, cm)).To(gomega.Succeed())
+					g.Expect(cm.Data[constants.MPIHostfileName]).Should(gomega.Equal(
+						"mixed-l40s-0-0.mixed slots=1\nmixed-l40s-0-1.mixed slots=1\nmixed-launcher-0-0.mixed slots=1\n"))
+				}, util.Timeout, util.Interval).Should(gomega.Succeed())
+			})
+		})
+
 		ginkgo.Context("Integration tests for the TrainJob Timeouts", func() {
 
 			ginkgo.It("Should fail TrainJob with DeadlineExceeded when ActiveDeadlineSeconds expires", func() {

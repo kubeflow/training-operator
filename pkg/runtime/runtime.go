@@ -266,29 +266,52 @@ func ExtractResourcePerNodeFromRuntime(info *Info) *corev1.ResourceRequirements 
 			if rJob.Name != nil && *rJob.Name == constants.Node || rJob.Template.Labels[constants.LabelTrainJobAncestor] == constants.AncestorTrainer {
 				for _, container := range rJob.Template.Spec.Template.Spec.Containers {
 					if container.Name != nil && *container.Name == constants.Node && container.Resources != nil {
-						res := &corev1.ResourceRequirements{
-							Limits:   corev1.ResourceList{},
-							Requests: corev1.ResourceList{},
-						}
-						if container.Resources.Limits != nil {
-							res.Limits = *container.Resources.Limits
-						}
-						if container.Resources.Requests != nil {
-							res.Requests = *container.Resources.Requests
-						}
-						for _, claim := range container.Resources.Claims {
-							res.Claims = append(res.Claims, corev1.ResourceClaim{
-								Name:    ptr.Deref(claim.Name, ""),
-								Request: ptr.Deref(claim.Request, ""),
-							})
-						}
-						return res
+						return toResourceRequirements(container.Resources)
 					}
 				}
 			}
 		}
 	}
 	return nil
+}
+
+// ExtractContainerResources extracts the resources of the named container in the named
+// ReplicatedJob from the Info object. It returns nil when the container has no resources.
+func ExtractContainerResources(info *Info, rJobName, containerName string) *corev1.ResourceRequirements {
+	if jobSetSpec, ok := TemplateSpecApply[jobsetv1alpha2ac.JobSetSpecApplyConfiguration](info); ok {
+		for _, rJob := range jobSetSpec.ReplicatedJobs {
+			if ptr.Deref(rJob.Name, "") != rJobName || rJob.Template == nil || rJob.Template.Spec == nil ||
+				rJob.Template.Spec.Template == nil || rJob.Template.Spec.Template.Spec == nil {
+				continue
+			}
+			for _, container := range rJob.Template.Spec.Template.Spec.Containers {
+				if ptr.Deref(container.Name, "") == containerName && container.Resources != nil {
+					return toResourceRequirements(container.Resources)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func toResourceRequirements(resources *corev1ac.ResourceRequirementsApplyConfiguration) *corev1.ResourceRequirements {
+	res := &corev1.ResourceRequirements{
+		Limits:   corev1.ResourceList{},
+		Requests: corev1.ResourceList{},
+	}
+	if resources.Limits != nil {
+		res.Limits = *resources.Limits
+	}
+	if resources.Requests != nil {
+		res.Requests = *resources.Requests
+	}
+	for _, claim := range resources.Claims {
+		res.Claims = append(res.Claims, corev1.ResourceClaim{
+			Name:    ptr.Deref(claim.Name, ""),
+			Request: ptr.Deref(claim.Request, ""),
+		})
+	}
+	return res
 }
 
 // GetNumGPUPerNode returns the GPU count if found in container resources.

@@ -88,3 +88,53 @@ mlPolicy:
     sshAuthMountPath: /home/mpiuser/.ssh
     runLauncherAsNode: true
 ```
+
+#### Node groups
+
+An MPI job can mix node classes, for example CPU only nodes and GPU nodes of different vendors,
+each with its own number of nodes and slots. Every node group is a replicatedJob of the runtime
+with its own Pod template, and `launcher` and `nodeGroups` reference them by name. `containerName`
+names the MPI container when the Pod also runs sidecars, and defaults to `node`.
+
+```yaml
+mlPolicy:
+  mpi:
+    mpiImplementation: OpenMPI
+    sshAuthMountPath: /home/mpiuser/.ssh
+    launcher:
+      jobName: launcher
+      runAsNode: false
+    nodeGroups:
+      - jobName: cpu
+        numNodes: 0 # offered, but disabled unless a TrainJob enables it
+        numProcPerNode: 32
+      - jobName: l40s
+        containerName: mpi
+        numNodes: 0 # numProcPerNode unset: the number of GPUs of the container
+```
+
+A group with `numNodes: 0` is left out of the JobSet, together with the `dependsOn` entries that
+point to it, so one runtime can offer every node class of a cluster. A TrainJob enables and tunes
+the groups with `spec.trainer.launcher` and `spec.trainer.nodeGroups`, which replace the other
+`spec.trainer` fields for these runtimes and apply only to the MPI container of each group:
+
+```yaml
+spec:
+  trainer:
+    launcher:
+      command: ["mpirun", "-x", "NCCL_DEBUG", "python", "/app/train.py"]
+      env:
+        - name: NCCL_DEBUG # ranks get their environment from the launcher through -x
+          value: INFO
+    nodeGroups:
+      - name: cpu
+        numNodes: 1
+      - name: l40s
+        numNodes: 2
+        image: registry.example.com/mpi-app:cuda-v2
+```
+
+Each group gets its own lines in the hostfile with its own slots. Placement per group, such as
+node selectors or affinities, stays in the runtime Pod templates or in `runtimePatches`. The groups
+can use different images, but they must ship compatible MPI versions, since the launcher starts
+the MPI daemons on every host over SSH.

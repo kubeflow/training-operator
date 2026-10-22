@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"testing"
 
 	gocmp "github.com/google/go-cmp/cmp"
@@ -30,12 +31,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	batchv1ac "k8s.io/client-go/applyconfigurations/batch/v1"
 	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
 	"k8s.io/klog/v2/ktesting"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	jobsetv1alpha2ac "sigs.k8s.io/jobset/client-go/applyconfiguration/jobset/v1alpha2"
 
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/constants"
@@ -1387,6 +1390,270 @@ func TestValidate(t *testing.T) {
 			}
 			if diff := gocmp.Diff(tc.wantWarnings, warnings); len(diff) != 0 {
 				t.Errorf("Unexpected warnings from Validate (-want, +got): %s", diff)
+			}
+		})
+	}
+}
+
+// nodeGroupsInfo builds the runtime Info of an MPI runtime with node groups, with one PodSet
+// per replicatedJob, as newRuntimeInfo does once the disabled node groups are removed.
+func nodeGroupsInfo(mpiPolicy *trainer.MPIMLPolicySource, rJobs ...*jobsetv1alpha2ac.ReplicatedJobApplyConfiguration) *runtime.Info {
+	jobSetSpec := jobsetv1alpha2ac.JobSetSpec()
+	var podSets []runtime.PodSet
+	for _, rJob := range rJobs {
+		jobSetSpec.WithReplicatedJobs(rJob)
+		ps := runtime.PodSet{Name: *rJob.Name, Count: ptr.To[int32](1)}
+		for _, c := range rJob.Template.Spec.Template.Spec.Containers {
+			ps.Containers = append(ps.Containers, runtime.Container{Name: *c.Name})
+		}
+		if *rJob.Name == mpiPolicy.Launcher.JobName {
+			ps.Ancestor = ptr.To(constants.AncestorTrainer)
+		}
+		podSets = append(podSets, ps)
+	}
+	return &runtime.Info{
+		RuntimePolicy: runtime.RuntimePolicy{MLPolicySource: &trainer.MLPolicySource{MPI: mpiPolicy}},
+		TemplateSpec:  runtime.TemplateSpec{ObjApply: jobSetSpec, PodSets: podSets},
+		Scheduler:     &runtime.Scheduler{PodLabels: make(map[string]string)},
+	}
+}
+
+func nodeGroupRJob(name string, containers ...*corev1ac.ContainerApplyConfiguration) *jobsetv1alpha2ac.ReplicatedJobApplyConfiguration {
+	return jobsetv1alpha2ac.ReplicatedJob().WithName(name).WithTemplate(
+		batchv1ac.JobTemplateSpec().WithSpec(batchv1ac.JobSpec().WithTemplate(
+			corev1ac.PodTemplateSpec().WithSpec(corev1ac.PodSpec().WithContainers(containers...)))))
+}
+
+func TestEnforceMPIGroups(t *testing.T) {
+	gpus := func(n string) *corev1ac.ResourceRequirementsApplyConfiguration {
+		return corev1ac.ResourceRequirements().WithLimits(corev1.ResourceList{"nvidia.com/gpu": resource.MustParse(n)})
+	}
+	newPolicy := func() *trainer.MPIMLPolicySource {
+		return &trainer.MPIMLPolicySource{
+			NumProcPerNode:    ptr.To[int32](1),
+			MPIImplementation: ptr.To(trainer.MPIImplementationOpenMPI),
+			SSHAuthMountPath:  ptr.To("/home/mpiuser/.ssh"),
+			Launcher:          trainer.MPILauncher{JobName: constants.Launcher, RunAsNode: ptr.To(true)},
+			NodeGroups: []trainer.MPINodeGroup{
+				{JobName: "cpu", NumNodes: ptr.To[int32](1), NumProcPerNode: ptr.To[int32](32)},
+				{JobName: "l40s", ContainerName: "mpi", NumNodes: ptr.To[int32](0)},
+				{JobName: "w7900", NumNodes: ptr.To[int32](0)},
+			},
+		}
+	}
+	// w7900 is disabled, so newRuntimeInfo already removed it and it has no PodSet.
+	newRJobs := func() []*jobsetv1alpha2ac.ReplicatedJobApplyConfiguration {
+		return []*jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
+			nodeGroupRJob("cpu", corev1ac.Container().WithName(constants.Node)),
+			nodeGroupRJob("l40s", corev1ac.Container().WithName("mpi").WithResources(gpus("2")), corev1ac.Container().WithName("log-shipper")),
+			nodeGroupRJob(constants.Launcher, corev1ac.Container().WithName(constants.Node)),
+		}
+	}
+	cases := map[string]struct {
+		trainer      *trainer.Trainer
+		wantCounts   map[string]int32
+		wantHostfile string
+	}{
+		"node groups get their own counts and slots, and the GPU fallback applies per group": {
+			trainer: &trainer.Trainer{NodeGroups: []trainer.MPINodeGroupOverride{{Name: "l40s", NumNodes: ptr.To[int32](2)}}},
+			wantCounts: map[string]int32{
+				"cpu": 1, "l40s": 2, constants.Launcher: 1,
+			},
+			wantHostfile: "test-cpu-0-0.test slots=32\n" +
+				"test-l40s-0-0.test slots=2\n" +
+				"test-l40s-0-1.test slots=2\n" +
+				"test-launcher-0-0.test slots=1\n",
+		},
+		"TrainJob numProcPerNode disables the GPU fallback, and the launcher can stop running as a node": {
+			trainer: &trainer.Trainer{
+				Launcher: &trainer.MPILauncherOverride{RunAsNode: ptr.To(false)},
+				NodeGroups: []trainer.MPINodeGroupOverride{{
+					Name: "l40s", NumNodes: ptr.To[int32](1), MPIGroupOverride: trainer.MPIGroupOverride{NumProcPerNode: ptr.To[int32](1)},
+				}},
+			},
+			wantCounts: map[string]int32{
+				"cpu": 1, "l40s": 1, constants.Launcher: 1,
+			},
+			wantHostfile: "test-cpu-0-0.test slots=32\n" +
+				"test-l40s-0-0.test slots=1\n",
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, ctx := ktesting.NewTestContext(t)
+			var cancel func()
+			ctx, cancel = context.WithCancel(ctx)
+			t.Cleanup(cancel)
+			cli := utiltesting.NewClientBuilder().Build()
+			p, err := New(ctx, cli, nil, nil)
+			if err != nil {
+				t.Fatalf("Failed to initialize MPI plugin: %v", err)
+			}
+			info := nodeGroupsInfo(newPolicy(), newRJobs()...)
+			trainJob := utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").UID("test").Trainer(tc.trainer).Obj()
+			if err = p.(framework.EnforceMLPolicyPlugin).EnforceMLPolicy(info, trainJob); err != nil {
+				t.Fatalf("Unexpected error from EnforceMLPolicy: %v", err)
+			}
+
+			gotCounts := make(map[string]int32)
+			for i, ps := range info.TemplateSpec.PodSets {
+				gotCounts[ps.Name] = *ps.Count
+				// The JobSet plugin computes the endpoints from the counts in PreBuildSync.
+				info.TemplateSpec.PodSets[i].Endpoints = func(yield func(string) bool) {
+					for podIdx := range *ps.Count {
+						if !yield(fmt.Sprintf("test-%s-0-%d.test", ps.Name, podIdx)) {
+							return
+						}
+					}
+				}
+			}
+			if diff := gocmp.Diff(tc.wantCounts, gotCounts); len(diff) != 0 {
+				t.Errorf("Unexpected PodSet counts (-want, +got): %s", diff)
+			}
+
+			for _, ps := range info.TemplateSpec.PodSets {
+				volumes := make(map[string]bool)
+				for _, v := range ps.Volumes {
+					volumes[*v.Name] = true
+				}
+				launcher := ps.Name == constants.Launcher
+				if !volumes[constants.MPISSHAuthVolumeName] || volumes[constants.MPIHostfileVolumeName] != launcher {
+					t.Errorf("Unexpected volumes in PodSet %s: %v", ps.Name, volumes)
+				}
+				for _, c := range ps.Containers {
+					mpiContainer := c.Name == constants.Node || (ps.Name == "l40s" && c.Name == "mpi")
+					mounts := make(map[string]string)
+					for _, m := range c.VolumeMounts {
+						mounts[*m.Name] = *m.MountPath
+					}
+					if (mounts[constants.MPISSHAuthVolumeName] == "/home/mpiuser/.ssh") != mpiContainer {
+						t.Errorf("Unexpected SSH mount in container %s of PodSet %s: %v", c.Name, ps.Name, mounts)
+					}
+					hasHostfileEnv := slices.ContainsFunc(c.Env, func(e corev1ac.EnvVarApplyConfiguration) bool {
+						return *e.Name == constants.OpenMPIEnvHostFileLocation
+					})
+					if hasHostfileEnv != (launcher && mpiContainer) {
+						t.Errorf("Unexpected hostfile env in container %s of PodSet %s", c.Name, ps.Name)
+					}
+				}
+			}
+
+			objs, err := p.(framework.ComponentBuilderPlugin).Build(ctx, info, trainJob)
+			if err != nil {
+				t.Fatalf("Unexpected error from Build: %v", err)
+			}
+			var gotHostfile string
+			for _, obj := range objs {
+				if cm, ok := obj.(*corev1ac.ConfigMapApplyConfiguration); ok {
+					gotHostfile = cm.Data[constants.MPIHostfileName]
+				}
+			}
+			if diff := gocmp.Diff(tc.wantHostfile, gotHostfile); len(diff) != 0 {
+				t.Errorf("Unexpected hostfile (-want, +got): %s", diff)
+			}
+		})
+	}
+}
+
+func TestValidateMPIGroups(t *testing.T) {
+	newPolicy := func() *trainer.MPIMLPolicySource {
+		return &trainer.MPIMLPolicySource{
+			NumProcPerNode: ptr.To[int32](1),
+			Launcher:       trainer.MPILauncher{JobName: constants.Launcher, RunAsNode: ptr.To(false)},
+			NodeGroups: []trainer.MPINodeGroup{
+				{JobName: "cpu", NumNodes: ptr.To[int32](0)},
+				{JobName: "l40s", NumNodes: ptr.To[int32](0)},
+			},
+		}
+	}
+	trainerPath := field.NewPath("spec", "trainer")
+	cases := map[string]struct {
+		mpiPolicy *trainer.MPIMLPolicySource
+		trainer   *trainer.Trainer
+		wantError field.ErrorList
+	}{
+		"valid TrainJob enables a node group": {
+			mpiPolicy: newPolicy(),
+			trainer:   &trainer.Trainer{NodeGroups: []trainer.MPINodeGroupOverride{{Name: "cpu", NumNodes: ptr.To[int32](2)}}},
+		},
+		"flat trainer fields are accepted by runtimes without node groups": {
+			mpiPolicy: &trainer.MPIMLPolicySource{NumProcPerNode: ptr.To[int32](1)},
+			trainer:   &trainer.Trainer{NumNodes: ptr.To[int32](2), Image: ptr.To("image")},
+		},
+		"launcher and nodeGroups are rejected by MPI runtimes without node groups": {
+			mpiPolicy: &trainer.MPIMLPolicySource{NumProcPerNode: ptr.To[int32](1)},
+			trainer: &trainer.Trainer{
+				Launcher:   &trainer.MPILauncherOverride{RunAsNode: ptr.To(true)},
+				NodeGroups: []trainer.MPINodeGroupOverride{{Name: "cpu"}},
+			},
+			wantError: field.ErrorList{
+				field.Forbidden(trainerPath.Child("launcher"), mpiNodeGroupsOnlyErrorMsg),
+				field.Forbidden(trainerPath.Child("nodeGroups"), mpiNodeGroupsOnlyErrorMsg),
+			},
+		},
+		"nodeGroups are rejected by runtimes without an MPI policy": {
+			trainer: &trainer.Trainer{NodeGroups: []trainer.MPINodeGroupOverride{{Name: "cpu"}}},
+			wantError: field.ErrorList{
+				field.Forbidden(trainerPath.Child("nodeGroups"), mpiNodeGroupsOnlyErrorMsg),
+			},
+		},
+		"flat trainer fields are rejected by runtimes with node groups": {
+			mpiPolicy: newPolicy(),
+			trainer: &trainer.Trainer{
+				Image:    ptr.To("image"),
+				NumNodes: ptr.To[int32](2),
+				Launcher: &trainer.MPILauncherOverride{RunAsNode: ptr.To(true)},
+			},
+			wantError: field.ErrorList{
+				field.Forbidden(trainerPath.Child("image"), mpiFlatFieldErrorMsg),
+				field.Forbidden(trainerPath.Child("numNodes"), mpiFlatFieldErrorMsg),
+			},
+		},
+		"node group names must match the runtime": {
+			mpiPolicy: newPolicy(),
+			trainer:   &trainer.Trainer{NodeGroups: []trainer.MPINodeGroupOverride{{Name: "h100", NumNodes: ptr.To[int32](1)}, {Name: "cpu", NumNodes: ptr.To[int32](1)}}},
+			wantError: field.ErrorList{
+				field.NotFound(trainerPath.Child("nodeGroups").Index(0).Child("name"), "h100"),
+			},
+		},
+		"launcher numProcPerNode requires the launcher to run as a node": {
+			mpiPolicy: newPolicy(),
+			trainer: &trainer.Trainer{
+				Launcher:   &trainer.MPILauncherOverride{MPIGroupOverride: trainer.MPIGroupOverride{NumProcPerNode: ptr.To[int32](2)}},
+				NodeGroups: []trainer.MPINodeGroupOverride{{Name: "cpu", NumNodes: ptr.To[int32](1)}},
+			},
+			wantError: field.ErrorList{
+				field.Invalid(trainerPath.Child("launcher", "numProcPerNode"), int32(2), "must not be set when the launcher does not run as a node"),
+			},
+		},
+		"at least one MPI host must be enabled": {
+			mpiPolicy: newPolicy(),
+			wantError: field.ErrorList{
+				field.Invalid(trainerPath.Child("nodeGroups"), int32(0),
+					"must enable at least one MPI host: set numNodes of a node group or run the launcher as a node"),
+			},
+		},
+		"the launcher running as a node is an MPI host": {
+			mpiPolicy: newPolicy(),
+			trainer:   &trainer.Trainer{Launcher: &trainer.MPILauncherOverride{RunAsNode: ptr.To(true)}},
+		},
+		"reserved MPI envs are rejected in node groups": {
+			mpiPolicy: newPolicy(),
+			trainer: &trainer.Trainer{NodeGroups: []trainer.MPINodeGroupOverride{{
+				Name: "cpu", NumNodes: ptr.To[int32](1),
+				MPIGroupOverride: trainer.MPIGroupOverride{Env: []corev1.EnvVar{{Name: constants.OpenMPIEnvHostFileLocation, Value: "/tmp/hostfile"}}},
+			}}},
+			wantError: field.ErrorList{
+				field.Invalid(trainerPath.Child("nodeGroups").Index(0).Child("env"),
+					[]corev1.EnvVar{{Name: constants.OpenMPIEnvHostFileLocation, Value: "/tmp/hostfile"}},
+					fmt.Sprintf("must not have reserved envs, invalid envs configured: %v", []string{constants.OpenMPIEnvHostFileLocation})),
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			if diff := gocmp.Diff(tc.wantError, validateMPIGroups(tc.mpiPolicy, tc.trainer)); len(diff) != 0 {
+				t.Errorf("Unexpected error from validateMPIGroups (-want, +got): %s", diff)
 			}
 		})
 	}

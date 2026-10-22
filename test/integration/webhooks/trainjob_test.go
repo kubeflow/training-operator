@@ -448,6 +448,56 @@ var _ = ginkgo.Describe("TrainJob Webhook", ginkgo.Ordered, func() {
 				},
 				testingutil.BeInvalidError(),
 			),
+			ginkgo.Entry("Should succeed to create TrainJob that enables MPI node groups",
+				func() *trainer.TrainJob {
+					gomega.Expect(k8sClient.Create(ctx, testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "mpi-node-groups"))).To(gomega.Succeed())
+					return testingutil.MakeTrainJobWrapper(ns.Name, jobName).
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "mpi-node-groups").
+						Trainer(&trainer.Trainer{
+							Launcher:   &trainer.MPILauncherOverride{MPIGroupOverride: trainer.MPIGroupOverride{Command: []string{"mpirun", "hostname"}}},
+							NodeGroups: []trainer.MPINodeGroupOverride{{Name: "l40s", NumNodes: ptr.To[int32](2)}},
+						}).
+						Obj()
+				},
+				gomega.Succeed()),
+			ginkgo.Entry("Should fail to create TrainJob that combines MPI node groups with the other trainer fields",
+				func() *trainer.TrainJob {
+					gomega.Expect(k8sClient.Create(ctx, testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "mpi-node-groups"))).To(gomega.Succeed())
+					return testingutil.MakeTrainJobWrapper(ns.Name, jobName).
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "mpi-node-groups").
+						Trainer(&trainer.Trainer{
+							Image:      ptr.To("mpi-app:cuda-v2"),
+							NodeGroups: []trainer.MPINodeGroupOverride{{Name: "l40s", NumNodes: ptr.To[int32](2)}},
+						}).
+						Obj()
+				},
+				testingutil.BeInvalidError()),
+			ginkgo.Entry("Should fail to create TrainJob with the flat trainer fields for an MPI runtime with node groups",
+				func() *trainer.TrainJob {
+					gomega.Expect(k8sClient.Create(ctx, testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "mpi-node-groups"))).To(gomega.Succeed())
+					return testingutil.MakeTrainJobWrapper(ns.Name, jobName).
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "mpi-node-groups").
+						Trainer(&trainer.Trainer{NumNodes: ptr.To[int32](2)}).
+						Obj()
+				},
+				testingutil.BeForbiddenError()),
+			ginkgo.Entry("Should fail to create TrainJob with a node group that the runtime does not declare",
+				func() *trainer.TrainJob {
+					gomega.Expect(k8sClient.Create(ctx, testingutil.MakeMPINodeGroupsTrainingRuntime(ns.Name, "mpi-node-groups"))).To(gomega.Succeed())
+					return testingutil.MakeTrainJobWrapper(ns.Name, jobName).
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), "mpi-node-groups").
+						Trainer(&trainer.Trainer{NodeGroups: []trainer.MPINodeGroupOverride{{Name: "h100", NumNodes: ptr.To[int32](1)}}}).
+						Obj()
+				},
+				testingutil.BeForbiddenError()),
+			ginkgo.Entry("Should fail to create TrainJob with MPI node groups for a runtime without node groups",
+				func() *trainer.TrainJob {
+					return testingutil.MakeTrainJobWrapper(ns.Name, jobName).
+						RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
+						Trainer(&trainer.Trainer{NodeGroups: []trainer.MPINodeGroupOverride{{Name: "l40s", NumNodes: ptr.To[int32](1)}}}).
+						Obj()
+				},
+				testingutil.BeForbiddenError()),
 		)
 		ginkgo.DescribeTable("RFC1035-compliant TrainJob name validation", func(trainJob func() *trainer.TrainJob, errorMatcher gomega.OmegaMatcher) {
 			gomega.Expect(k8sClient.Create(ctx, trainJob())).Should(errorMatcher)
