@@ -72,8 +72,18 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &trainerv1alpha1.MLPolicySourceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ModelInitializer"):
 		return &trainerv1alpha1.ModelInitializerApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MPIGroupOverride"):
+		return &trainerv1alpha1.MPIGroupOverrideApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MPILauncher"):
+		return &trainerv1alpha1.MPILauncherApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MPILauncherOverride"):
+		return &trainerv1alpha1.MPILauncherOverrideApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("MPIMLPolicySource"):
 		return &trainerv1alpha1.MPIMLPolicySourceApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MPINodeGroup"):
+		return &trainerv1alpha1.MPINodeGroupApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("MPINodeGroupOverride"):
+		return &trainerv1alpha1.MPINodeGroupOverrideApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Objective"):
 		return &trainerv1alpha1.ObjectiveApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OptimizationJob"):

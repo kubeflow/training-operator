@@ -57,7 +57,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.LogUniformSpace":                  schema_pkg_apis_trainer_v1alpha1_LogUniformSpace(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MLPolicy":                         schema_pkg_apis_trainer_v1alpha1_MLPolicy(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MLPolicySource":                   schema_pkg_apis_trainer_v1alpha1_MLPolicySource(ref),
+		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPIGroupOverride":                 schema_pkg_apis_trainer_v1alpha1_MPIGroupOverride(ref),
+		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPILauncher":                      schema_pkg_apis_trainer_v1alpha1_MPILauncher(ref),
+		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPILauncherOverride":              schema_pkg_apis_trainer_v1alpha1_MPILauncherOverride(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPIMLPolicySource":                schema_pkg_apis_trainer_v1alpha1_MPIMLPolicySource(ref),
+		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPINodeGroup":                     schema_pkg_apis_trainer_v1alpha1_MPINodeGroup(ref),
+		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPINodeGroupOverride":             schema_pkg_apis_trainer_v1alpha1_MPINodeGroupOverride(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.Metric":                           schema_pkg_apis_trainer_v1alpha1_Metric(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.ModelInitializer":                 schema_pkg_apis_trainer_v1alpha1_ModelInitializer(ref),
 		"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.Objective":                        schema_pkg_apis_trainer_v1alpha1_Objective(ref),
@@ -1266,6 +1271,243 @@ func schema_pkg_apis_trainer_v1alpha1_MLPolicySource(ref common.ReferenceCallbac
 	}
 }
 
+func schema_pkg_apis_trainer_v1alpha1_MPIGroupOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MPIGroupOverride holds the fields shared by the MPI launcher and node group overrides. The container fields apply only to the container named by containerName in the runtime, so sidecars and init containers are left untouched.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"numProcPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "numProcPerNode overrides the number of slots of each host in the group.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Description: "image is the container image for the MPI container of the group.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"command": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "command for the entrypoint of the MPI container of the group.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"args": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "args for the entrypoint of the MPI container of the group.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "env is the list of environment variables to set in the MPI container of the group. These values will be merged with the environments of the container in the runtime. MPI ranks started over SSH do not inherit the environment of a node group container, so variables for the ranks belong on the launcher, for example with `mpirun -x`.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref(corev1.EnvVar{}.OpenAPIModelName()),
+									},
+								},
+							},
+						},
+					},
+					"resourcesPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "resourcesPerNode defines the compute resources for each Pod of the group.",
+							Ref:         ref(corev1.ResourceRequirements{}.OpenAPIModelName()),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			corev1.EnvVar{}.OpenAPIModelName(), corev1.ResourceRequirements{}.OpenAPIModelName()},
+	}
+}
+
+func schema_pkg_apis_trainer_v1alpha1_MPILauncher(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MPILauncher references the replicatedJob that runs mpirun.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"jobName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "jobName is the name of the launcher replicatedJob.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"containerName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "containerName is the name of the container that runs mpirun. Defaults to node.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"runAsNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "runAsNode defines whether the launcher is also an MPI host and gets a line in the hostfile. It replaces runLauncherAsNode for runtimes with nodeGroups. Defaults to false.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"numProcPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "numProcPerNode is the number of slots of the launcher when runAsNode is true. Defaults to mlPolicy.mpi.numProcPerNode.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+				Required: []string{"jobName"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_trainer_v1alpha1_MPILauncherOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MPILauncherOverride overrides the MPI launcher of the runtime.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"runAsNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "runAsNode overrides mlPolicy.mpi.launcher.runAsNode.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"numProcPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "numProcPerNode overrides the number of slots of each host in the group.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Description: "image is the container image for the MPI container of the group.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"command": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "command for the entrypoint of the MPI container of the group.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"args": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "args for the entrypoint of the MPI container of the group.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "env is the list of environment variables to set in the MPI container of the group. These values will be merged with the environments of the container in the runtime. MPI ranks started over SSH do not inherit the environment of a node group container, so variables for the ranks belong on the launcher, for example with `mpirun -x`.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref(corev1.EnvVar{}.OpenAPIModelName()),
+									},
+								},
+							},
+						},
+					},
+					"resourcesPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "resourcesPerNode defines the compute resources for each Pod of the group.",
+							Ref:         ref(corev1.ResourceRequirements{}.OpenAPIModelName()),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			corev1.EnvVar{}.OpenAPIModelName(), corev1.ResourceRequirements{}.OpenAPIModelName()},
+	}
+}
+
 func schema_pkg_apis_trainer_v1alpha1_MPIMLPolicySource(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1301,9 +1543,190 @@ func schema_pkg_apis_trainer_v1alpha1_MPIMLPolicySource(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
+					"launcher": {
+						SchemaProps: spec.SchemaProps{
+							Description: "launcher declares the replicatedJob that runs mpirun. It must be set together with nodeGroups. With launcher and nodeGroups, the MPI plugin finds the launcher and the node groups by jobName instead of the replicatedJob names `launcher` and `node`, and numProcPerNode is the default number of slots for the launcher and the node groups that do not set their own.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPILauncher"),
+						},
+					},
+					"nodeGroups": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"jobName",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "nodeGroups declares the replicatedJobs whose Pods are MPI hosts. Each group has its own number of nodes and slots, and its Pods get their own lines in the hostfile.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPINodeGroup"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPILauncher", "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPINodeGroup"},
+	}
+}
+
+func schema_pkg_apis_trainer_v1alpha1_MPINodeGroup(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MPINodeGroup references a replicatedJob whose Pods are MPI hosts.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"jobName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "jobName is the name of the replicatedJob.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"containerName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "containerName is the name of the container that runs the SSH server of the MPI host. Defaults to node.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"numNodes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "numNodes is the number of Pods of the group, each one an MPI host. A group with 0 nodes is left out of the JobSet unless a TrainJob enables it, so a runtime can offer groups that TrainJobs opt into. Defaults to 1.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"numProcPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "numProcPerNode is the number of slots of each host in the group. Defaults to mlPolicy.mpi.numProcPerNode. When it resolves to 1 and the group container requests more than one GPU, the number of GPUs is used instead.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+				Required: []string{"jobName"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_trainer_v1alpha1_MPINodeGroupOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MPINodeGroupOverride overrides one MPI node group of the runtime.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "name is the jobName of a node group in the runtime mlPolicy.mpi.nodeGroups.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"numNodes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "numNodes overrides the number of Pods of the group. 0 disables the group.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"numProcPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "numProcPerNode overrides the number of slots of each host in the group.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Description: "image is the container image for the MPI container of the group.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"command": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "command for the entrypoint of the MPI container of the group.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"args": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "args for the entrypoint of the MPI container of the group.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"env": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "env is the list of environment variables to set in the MPI container of the group. These values will be merged with the environments of the container in the runtime. MPI ranks started over SSH do not inherit the environment of a node group container, so variables for the ranks belong on the launcher, for example with `mpirun -x`.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref(corev1.EnvVar{}.OpenAPIModelName()),
+									},
+								},
+							},
+						},
+					},
+					"resourcesPerNode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "resourcesPerNode defines the compute resources for each Pod of the group.",
+							Ref:         ref(corev1.ResourceRequirements{}.OpenAPIModelName()),
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+		Dependencies: []string{
+			corev1.EnvVar{}.OpenAPIModelName(), corev1.ResourceRequirements{}.OpenAPIModelName()},
 	}
 }
 
@@ -2495,7 +2918,7 @@ func schema_pkg_apis_trainer_v1alpha1_Trainer(ref common.ReferenceCallback) comm
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Trainer represents the desired configuration for the training job. The Trainer spec will override the runtime template which contains this label: `trainer.kubeflow.org/trainjob-ancestor-step: trainer`",
+				Description: "Trainer represents the desired configuration for the training job. The Trainer spec will override the runtime template which contains this label: `trainer.kubeflow.org/trainjob-ancestor-step: trainer` For MPI runtimes that declare node groups, launcher and nodeGroups replace the other fields.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"image": {
@@ -2605,11 +3028,38 @@ func schema_pkg_apis_trainer_v1alpha1_Trainer(ref common.ReferenceCallback) comm
 							Format:      "int32",
 						},
 					},
+					"launcher": {
+						SchemaProps: spec.SchemaProps{
+							Description: "launcher overrides the MPI launcher declared in the runtime mlPolicy.mpi.launcher. It can only be set for MPI runtimes that declare nodeGroups.",
+							Ref:         ref("github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPILauncherOverride"),
+						},
+					},
+					"nodeGroups": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"name",
+								},
+								"x-kubernetes-list-type": "map",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "nodeGroups overrides the MPI node groups declared in the runtime mlPolicy.mpi.nodeGroups. Every name must match the jobName of a node group in the runtime.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPINodeGroupOverride"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainerResourceClaim", corev1.EnvVar{}.OpenAPIModelName(), corev1.ResourceRequirements{}.OpenAPIModelName()},
+			"github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPILauncherOverride", "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.MPINodeGroupOverride", "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1.TrainerResourceClaim", corev1.EnvVar{}.OpenAPIModelName(), corev1.ResourceRequirements{}.OpenAPIModelName()},
 	}
 }
 

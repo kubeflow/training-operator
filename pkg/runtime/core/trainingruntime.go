@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
@@ -181,6 +182,13 @@ func (r *TrainingRuntime) newRuntimeInfo(
 		return nil, err
 	}
 
+	var mpiPolicy *trainer.MPIMLPolicySource
+	if mlPolicy != nil {
+		mpiPolicy = mlPolicy.MPI
+	}
+	mpiGroups := runtime.MPIGroups(mpiPolicy, trainJob.Spec.Trainer)
+	removeDisabledMPINodeGroups(&jobSetTemplateSpec.Spec, mpiGroups)
+
 	jobSetSpecApply, err := apply.FromTypedObjWithFields[jobsetv1alpha2ac.JobSetSpecApplyConfiguration](&jobsetv1alpha2.JobSet{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: jobsetv1alpha2.GroupVersion.String(),
@@ -238,6 +246,16 @@ func (r *TrainingRuntime) newRuntimeInfo(
 				}
 			}
 		}
+		if group := runtime.FindMPIGroup(mpiGroups, ptr.Deref(rJob.Name, "")); group != nil {
+			// The launcher of an MPI runtime with node groups is the trainer step of the TrainJob,
+			// so plugins that look for the trainer PodSet find it without the ancestor label.
+			if group.Launcher {
+				ancestor = ptr.To(constants.AncestorTrainer)
+			}
+			if err := mergeMPIGroupResources(group, &jobSetTemplateSpec.Spec.ReplicatedJobs[i], &jobSetSpecApply.ReplicatedJobs[i]); err != nil {
+				return nil, err
+			}
+		}
 		opts = append(opts, runtime.WithPodSet(
 			*rJob.Name,
 			ancestor,
@@ -288,6 +306,63 @@ func (r *TrainingRuntime) mergeRuntimePatches(trainJob *trainer.TrainJob, jobSet
 			order[jobSetTemplateSpec.Spec.ReplicatedJobs[j].Name]
 	})
 
+	return nil
+}
+
+// removeDisabledMPINodeGroups removes the replicatedJobs of the MPI node groups with 0 nodes
+// from the JobSet spec, together with the dependsOn, successPolicy and failurePolicy entries
+// that reference them, so a runtime can offer node groups that only some TrainJobs enable.
+func removeDisabledMPINodeGroups(spec *jobsetv1alpha2.JobSetSpec, groups []runtime.MPIGroup) {
+	disabled := sets.New[string]()
+	for _, group := range groups {
+		if !group.Launcher && group.NumNodes == 0 {
+			disabled.Insert(group.JobName)
+		}
+	}
+	if disabled.Len() == 0 {
+		return
+	}
+	spec.ReplicatedJobs = slices.DeleteFunc(spec.ReplicatedJobs, func(rJob jobsetv1alpha2.ReplicatedJob) bool {
+		return disabled.Has(rJob.Name)
+	})
+	for i := range spec.ReplicatedJobs {
+		spec.ReplicatedJobs[i].DependsOn = slices.DeleteFunc(spec.ReplicatedJobs[i].DependsOn, func(dep jobsetv1alpha2.DependsOn) bool {
+			return disabled.Has(dep.Name)
+		})
+	}
+	if spec.SuccessPolicy != nil {
+		spec.SuccessPolicy.TargetReplicatedJobs = slices.DeleteFunc(spec.SuccessPolicy.TargetReplicatedJobs, disabled.Has)
+	}
+	if spec.FailurePolicy != nil {
+		for i := range spec.FailurePolicy.Rules {
+			spec.FailurePolicy.Rules[i].TargetReplicatedJobs = slices.DeleteFunc(spec.FailurePolicy.Rules[i].TargetReplicatedJobs, disabled.Has)
+		}
+	}
+}
+
+// mergeMPIGroupResources merges the TrainJob resourcesPerNode of an MPI launcher or node group
+// into the MPI container of its replicatedJob, keeping the typed template in sync since it
+// feeds PodSet.SinglePodRequests.
+func mergeMPIGroupResources(group *runtime.MPIGroup, rJob *jobsetv1alpha2.ReplicatedJob, rJobApply *jobsetv1alpha2ac.ReplicatedJobApplyConfiguration) error {
+	if group.Override == nil || group.Override.ResourcesPerNode == nil {
+		return nil
+	}
+	applyPodSpec := rJobApply.Template.Spec.Template.Spec
+	if applyPodSpec == nil {
+		return nil
+	}
+	for k := range applyPodSpec.Containers {
+		if ptr.Deref(applyPodSpec.Containers[k].Name, "") != group.ContainerName {
+			continue
+		}
+		mergedRes, err := mergeTrainerNodeResources(&applyPodSpec.Containers[k], group.Override.ResourcesPerNode, nil)
+		if err != nil {
+			return err
+		}
+		rJob.Template.Spec.Template.Spec.Containers[k].Resources = mergedRes
+		applyPodSpec.Containers[k].Resources = toApplyConfig(mergedRes)
+		return nil
+	}
 	return nil
 }
 

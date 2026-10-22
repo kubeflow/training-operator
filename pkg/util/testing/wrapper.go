@@ -923,6 +923,51 @@ type TrainingRuntimeWrapper struct {
 	trainer.TrainingRuntime
 }
 
+// MakeMPINodeGroupsTrainingRuntime returns an OpenMPI TrainingRuntime with node groups: a launcher
+// that runs as a node, a "cpu" group with 32 slots and an "l40s" group whose MPI container is "mpi",
+// next to a "log-shipper" sidecar. Both groups are disabled, so a TrainJob must enable them.
+func MakeMPINodeGroupsTrainingRuntime(namespace, name string) *trainer.TrainingRuntime {
+	rJob := func(rJobName string, containers ...string) jobsetv1alpha2.ReplicatedJob {
+		r := jobsetv1alpha2.ReplicatedJob{Name: rJobName, Replicas: 1}
+		for _, c := range containers {
+			r.Template.Spec.Template.Spec.Containers = append(r.Template.Spec.Template.Spec.Containers,
+				corev1.Container{Name: c, Image: "mpi-app:cuda"})
+		}
+		return r
+	}
+	launcher := rJob(constants.Launcher, constants.Node)
+	launcher.DependsOn = []jobsetv1alpha2.DependsOn{
+		{Name: "cpu", Status: jobsetv1alpha2.DependencyReady},
+		{Name: "l40s", Status: jobsetv1alpha2.DependencyReady},
+	}
+	return &trainer.TrainingRuntime{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: trainer.SchemeGroupVersion.String(),
+			Kind:       trainer.TrainingRuntimeKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: name},
+		Spec: trainer.TrainingRuntimeSpec{
+			MLPolicy: &trainer.MLPolicy{MLPolicySource: trainer.MLPolicySource{MPI: &trainer.MPIMLPolicySource{
+				NumProcPerNode:    ptr.To[int32](1),
+				MPIImplementation: ptr.To(trainer.MPIImplementationOpenMPI),
+				SSHAuthMountPath:  ptr.To("/home/mpiuser/.ssh"),
+				Launcher:          trainer.MPILauncher{JobName: constants.Launcher, RunAsNode: ptr.To(true)},
+				NodeGroups: []trainer.MPINodeGroup{
+					{JobName: "cpu", NumNodes: ptr.To[int32](0), NumProcPerNode: ptr.To[int32](32)},
+					{JobName: "l40s", ContainerName: "mpi", NumNodes: ptr.To[int32](0)},
+				},
+			}}},
+			Template: trainer.JobSetTemplateSpec{Spec: jobsetv1alpha2.JobSetSpec{
+				ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
+					rJob("cpu", constants.Node),
+					rJob("l40s", "mpi", "log-shipper"),
+					launcher,
+				},
+			}},
+		},
+	}
+}
+
 func MakeTrainingRuntimeWrapper(namespace, name string) *TrainingRuntimeWrapper {
 	return &TrainingRuntimeWrapper{
 		TrainingRuntime: trainer.TrainingRuntime{

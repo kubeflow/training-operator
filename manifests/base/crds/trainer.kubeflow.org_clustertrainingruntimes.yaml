@@ -72,6 +72,45 @@ spec:
                   mpi:
                     description: mpi defines the configuration for the MPI Runtime.
                     properties:
+                      launcher:
+                        description: launcher declares the replicatedJob that runs
+                          mpirun. It must be set together with nodeGroups.
+                        properties:
+                          containerName:
+                            default: node
+                            description: |-
+                              containerName is the name of the container that runs mpirun.
+                              Defaults to node.
+                            maxLength: 63
+                            minLength: 1
+                            type: string
+                          jobName:
+                            description: jobName is the name of the launcher replicatedJob.
+                            maxLength: 253
+                            minLength: 1
+                            type: string
+                          numProcPerNode:
+                            description: |-
+                              numProcPerNode is the number of slots of the launcher when runAsNode is true.
+                              Defaults to mlPolicy.mpi.numProcPerNode.
+                            format: int32
+                            type: integer
+                            x-kubernetes-validations:
+                            - message: numProcPerNode must be greater than or equal
+                                to 1
+                              rule: self >= 1
+                          runAsNode:
+                            default: false
+                            description: runAsNode defines whether the launcher is
+                              also an MPI host and gets a line in the hostfile.
+                            type: boolean
+                        required:
+                        - jobName
+                        type: object
+                        x-kubernetes-validations:
+                        - message: numProcPerNode requires runAsNode
+                          rule: '!has(self.numProcPerNode) || (has(self.runAsNode)
+                            && self.runAsNode)'
                       mpiImplementation:
                         default: OpenMPI
                         description: |-
@@ -81,6 +120,52 @@ spec:
                         - OpenMPI
                         - ""
                         type: string
+                      nodeGroups:
+                        description: nodeGroups declares the replicatedJobs whose
+                          Pods are MPI hosts.
+                        items:
+                          description: MPINodeGroup references a replicatedJob whose
+                            Pods are MPI hosts.
+                          properties:
+                            containerName:
+                              default: node
+                              description: |-
+                                containerName is the name of the container that runs the SSH server of the MPI host.
+                                Defaults to node.
+                              maxLength: 63
+                              minLength: 1
+                              type: string
+                            jobName:
+                              description: jobName is the name of the replicatedJob.
+                              maxLength: 253
+                              minLength: 1
+                              type: string
+                            numNodes:
+                              default: 1
+                              description: numNodes is the number of Pods of the group,
+                                each one an MPI host.
+                              format: int32
+                              minimum: 0
+                              type: integer
+                            numProcPerNode:
+                              description: |-
+                                numProcPerNode is the number of slots of each host in the group.
+                                Defaults to mlPolicy.mpi.numProcPerNode.
+                              format: int32
+                              type: integer
+                              x-kubernetes-validations:
+                              - message: numProcPerNode must be greater than or equal
+                                  to 1
+                                rule: self >= 1
+                          required:
+                          - jobName
+                          type: object
+                        maxItems: 32
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - jobName
+                        x-kubernetes-list-type: map
                       numProcPerNode:
                         default: 1
                         description: |-
@@ -105,6 +190,17 @@ spec:
                         maxLength: 4096
                         type: string
                     type: object
+                    x-kubernetes-validations:
+                    - message: launcher and nodeGroups must be set together
+                      rule: has(self.launcher) == has(self.nodeGroups)
+                    - message: runLauncherAsNode must not be set with launcher, use
+                        launcher.runAsNode instead
+                      rule: '!has(self.launcher) || !has(self.runLauncherAsNode) ||
+                        !self.runLauncherAsNode'
+                    - message: a replicatedJob cannot be both the launcher and a node
+                        group
+                      rule: '!has(self.launcher) || !has(self.nodeGroups) || self.nodeGroups.all(g,
+                        g.jobName != self.launcher.jobName)'
                   numNodes:
                     description: |-
                       numNodes is the number of training nodes.

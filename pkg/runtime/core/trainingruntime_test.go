@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -31,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	batchv1ac "k8s.io/client-go/applyconfigurations/batch/v1"
 	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/klog/v2/ktesting"
@@ -38,12 +41,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 	jobsetv1alpha2 "sigs.k8s.io/jobset/api/jobset/v1alpha2"
+	jobsetv1alpha2ac "sigs.k8s.io/jobset/client-go/applyconfiguration/jobset/v1alpha2"
 	schedulerpluginsv1alpha1 "sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
 	volcanov1beta1 "volcano.sh/apis/pkg/apis/scheduling/v1beta1"
 
 	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/constants"
 	"github.com/kubeflow/trainer/v2/pkg/features"
+	trainerruntime "github.com/kubeflow/trainer/v2/pkg/runtime"
 	jobsetplgconsts "github.com/kubeflow/trainer/v2/pkg/runtime/framework/plugins/jobset/constants"
 	testingutil "github.com/kubeflow/trainer/v2/pkg/util/testing"
 )
@@ -2887,6 +2892,252 @@ func TestToApplyConfig(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if diff := cmp.Diff(tc.want, toApplyConfig(tc.res)); len(diff) != 0 {
 				t.Errorf("Unexpected apply configuration (-want,+got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// mpiNodeGroupsRJob builds a replicatedJob of an MPI runtime with node groups.
+func mpiNodeGroupsRJob(name string, dependsOn []string, containers ...corev1.Container) jobsetv1alpha2.ReplicatedJob {
+	rJob := jobsetv1alpha2.ReplicatedJob{Name: name, Replicas: 1}
+	rJob.Template.Spec.Parallelism = ptr.To[int32](1)
+	rJob.Template.Spec.Completions = ptr.To[int32](1)
+	rJob.Template.Spec.Template.Spec.Containers = containers
+	for _, dep := range dependsOn {
+		rJob.DependsOn = append(rJob.DependsOn, jobsetv1alpha2.DependsOn{Name: dep, Status: jobsetv1alpha2.DependencyReady})
+	}
+	return rJob
+}
+
+func TestTrainingRuntimeNewObjectsMPINodeGroups(t *testing.T) {
+	gpu := func(n string) corev1.ResourceRequirements {
+		return corev1.ResourceRequirements{Limits: corev1.ResourceList{"nvidia.com/gpu": resource.MustParse(n)}}
+	}
+	trainingRuntime := testingutil.MakeTrainingRuntimeWrapper(metav1.NamespaceDefault, "mpi-node-groups").Obj()
+	trainingRuntime.Spec = trainer.TrainingRuntimeSpec{
+		MLPolicy: &trainer.MLPolicy{MLPolicySource: trainer.MLPolicySource{MPI: &trainer.MPIMLPolicySource{
+			NumProcPerNode:    ptr.To[int32](1),
+			MPIImplementation: ptr.To(trainer.MPIImplementationOpenMPI),
+			SSHAuthMountPath:  ptr.To("/home/mpiuser/.ssh"),
+			Launcher:          trainer.MPILauncher{JobName: constants.Launcher, RunAsNode: ptr.To(true)},
+			NodeGroups: []trainer.MPINodeGroup{
+				{JobName: "cpu", NumNodes: ptr.To[int32](0), NumProcPerNode: ptr.To[int32](32)},
+				{JobName: "l40s", ContainerName: "mpi", NumNodes: ptr.To[int32](0)},
+				{JobName: "w7900", NumNodes: ptr.To[int32](0)},
+			},
+		}}},
+		Template: trainer.JobSetTemplateSpec{Spec: jobsetv1alpha2.JobSetSpec{
+			SuccessPolicy: &jobsetv1alpha2.SuccessPolicy{Operator: jobsetv1alpha2.OperatorAll, TargetReplicatedJobs: []string{constants.Launcher}},
+			ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
+				mpiNodeGroupsRJob("cpu", nil, corev1.Container{Name: constants.Node, Image: "mpi-app:cuda"}),
+				mpiNodeGroupsRJob("l40s", nil,
+					corev1.Container{Name: "mpi", Image: "mpi-app:cuda", Resources: gpu("1")},
+					corev1.Container{Name: "log-shipper", Image: "log-shipper:1.0"}),
+				mpiNodeGroupsRJob("w7900", nil, corev1.Container{Name: constants.Node, Image: "mpi-app:rocm"}),
+				mpiNodeGroupsRJob(constants.Launcher, []string{"cpu", "l40s", "w7900"}, corev1.Container{Name: constants.Node, Image: "mpi-app:cuda"}),
+			},
+		}},
+	}
+	trainJob := testingutil.MakeTrainJobWrapper(metav1.NamespaceDefault, "mixed").
+		UID("uid").
+		RuntimeRef(trainer.SchemeGroupVersion.WithKind(trainer.TrainingRuntimeKind), "mpi-node-groups").
+		Trainer(&trainer.Trainer{
+			Launcher: &trainer.MPILauncherOverride{MPIGroupOverride: trainer.MPIGroupOverride{
+				Command: []string{"mpirun", "python", "/app/train.py"},
+			}},
+			NodeGroups: []trainer.MPINodeGroupOverride{
+				{Name: "cpu", NumNodes: ptr.To[int32](1)},
+				{Name: "l40s", NumNodes: ptr.To[int32](2), MPIGroupOverride: trainer.MPIGroupOverride{
+					Image:            ptr.To("mpi-app:cuda-v2"),
+					Env:              []corev1.EnvVar{{Name: "NCCL_DEBUG", Value: "INFO"}},
+					ResourcesPerNode: ptr.To(gpu("2")),
+				}},
+			},
+		}).
+		Obj()
+
+	_, ctx := ktesting.NewTestContext(t)
+	var cancel func()
+	ctx, cancel = context.WithCancel(ctx)
+	t.Cleanup(cancel)
+	clientBuilder := testingutil.NewClientBuilder().WithObjects(trainingRuntime)
+	c := clientBuilder.Build()
+	rt, err := NewTrainingRuntime(ctx, c, testingutil.AsIndex(clientBuilder), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	objs, err := rt.NewObjects(ctx, trainJob)
+	if err != nil {
+		t.Fatalf("Unexpected error from NewObjects: %v", err)
+	}
+	typedObjs, err := testingutil.ToObject(c.Scheme(), objs...)
+	if err != nil {
+		t.Fatalf("Pipeline built unrecognizable objects: %v", err)
+	}
+
+	var jobSet *jobsetv1alpha2.JobSet
+	var hostfile string
+	for _, obj := range typedObjs {
+		switch o := obj.(type) {
+		case *jobsetv1alpha2.JobSet:
+			jobSet = o
+		case *corev1.ConfigMap:
+			hostfile = o.Data[constants.MPIHostfileName]
+		}
+	}
+	if jobSet == nil {
+		t.Fatalf("NewObjects did not build a JobSet")
+	}
+
+	type rJobSummary struct {
+		Parallelism int32
+		DependsOn   []string
+		Containers  map[string]corev1.Container
+	}
+	got := make(map[string]rJobSummary)
+	for _, rJob := range jobSet.Spec.ReplicatedJobs {
+		summary := rJobSummary{Parallelism: ptr.Deref(rJob.Template.Spec.Parallelism, 0), Containers: map[string]corev1.Container{}}
+		for _, dep := range rJob.DependsOn {
+			summary.DependsOn = append(summary.DependsOn, dep.Name)
+		}
+		for _, container := range rJob.Template.Spec.Template.Spec.Containers {
+			summary.Containers[container.Name] = container
+		}
+		got[rJob.Name] = summary
+	}
+	if diff := cmp.Diff([]string{"cpu", "l40s", constants.Launcher}, slices.Collect(maps.Keys(got)), cmpopts.SortSlices(func(a, b string) bool { return a < b })); len(diff) != 0 {
+		t.Errorf("Unexpected replicatedJobs, the disabled w7900 group must be removed (-want, +got): %s", diff)
+	}
+	if diff := cmp.Diff([]string{"cpu", "l40s"}, got[constants.Launcher].DependsOn); len(diff) != 0 {
+		t.Errorf("Unexpected launcher dependsOn (-want, +got): %s", diff)
+	}
+	for name, want := range map[string]int32{"cpu": 1, "l40s": 2, constants.Launcher: 1} {
+		if got[name].Parallelism != want {
+			t.Errorf("Unexpected parallelism of %s: want %d, got %d", name, want, got[name].Parallelism)
+		}
+	}
+	mpiContainer := got["l40s"].Containers["mpi"]
+	if mpiContainer.Image != "mpi-app:cuda-v2" {
+		t.Errorf("Unexpected image of the l40s MPI container: %s", mpiContainer.Image)
+	}
+	if !slices.ContainsFunc(mpiContainer.Env, func(e corev1.EnvVar) bool { return e.Name == "NCCL_DEBUG" && e.Value == "INFO" }) {
+		t.Errorf("The l40s MPI container misses the TrainJob env: %v", mpiContainer.Env)
+	}
+	if diff := cmp.Diff(gpu("2").Limits, mpiContainer.Resources.Limits); len(diff) != 0 {
+		t.Errorf("Unexpected resources of the l40s MPI container (-want, +got): %s", diff)
+	}
+	sidecar := got["l40s"].Containers["log-shipper"]
+	if sidecar.Image != "log-shipper:1.0" || len(sidecar.VolumeMounts) != 0 || len(sidecar.Env) != 0 {
+		t.Errorf("The l40s sidecar must be left untouched: %+v", sidecar)
+	}
+	if diff := cmp.Diff([]string{"mpirun", "python", "/app/train.py"}, got[constants.Launcher].Containers[constants.Node].Command); len(diff) != 0 {
+		t.Errorf("Unexpected launcher command (-want, +got): %s", diff)
+	}
+	wantHostfile := "mixed-cpu-0-0.mixed slots=32\n" +
+		"mixed-l40s-0-0.mixed slots=2\n" +
+		"mixed-l40s-0-1.mixed slots=2\n" +
+		"mixed-launcher-0-0.mixed slots=1\n"
+	if diff := cmp.Diff(wantHostfile, hostfile); len(diff) != 0 {
+		t.Errorf("Unexpected hostfile (-want, +got): %s", diff)
+	}
+}
+
+func TestRemoveDisabledMPINodeGroups(t *testing.T) {
+	groups := []trainerruntime.MPIGroup{
+		{JobName: constants.Launcher, Launcher: true, NumNodes: 1},
+		{JobName: "cpu", Host: true, NumNodes: 1},
+		{JobName: "w7900", Host: true, NumNodes: 0},
+	}
+	cases := map[string]struct {
+		groups []trainerruntime.MPIGroup
+		spec   jobsetv1alpha2.JobSetSpec
+		want   jobsetv1alpha2.JobSetSpec
+	}{
+		"no change without MPI groups": {
+			spec: jobsetv1alpha2.JobSetSpec{ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{{Name: "w7900"}}},
+			want: jobsetv1alpha2.JobSetSpec{ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{{Name: "w7900"}}},
+		},
+		"disabled groups and the references to them are removed": {
+			groups: groups,
+			spec: jobsetv1alpha2.JobSetSpec{
+				ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
+					{Name: "cpu"},
+					{Name: "w7900"},
+					{Name: constants.Launcher, DependsOn: []jobsetv1alpha2.DependsOn{{Name: "cpu"}, {Name: "w7900"}}},
+				},
+				SuccessPolicy: &jobsetv1alpha2.SuccessPolicy{TargetReplicatedJobs: []string{constants.Launcher, "w7900"}},
+				FailurePolicy: &jobsetv1alpha2.FailurePolicy{Rules: []jobsetv1alpha2.FailurePolicyRule{{TargetReplicatedJobs: []string{"w7900", "cpu"}}}},
+			},
+			want: jobsetv1alpha2.JobSetSpec{
+				ReplicatedJobs: []jobsetv1alpha2.ReplicatedJob{
+					{Name: "cpu"},
+					{Name: constants.Launcher, DependsOn: []jobsetv1alpha2.DependsOn{{Name: "cpu"}}},
+				},
+				SuccessPolicy: &jobsetv1alpha2.SuccessPolicy{TargetReplicatedJobs: []string{constants.Launcher}},
+				FailurePolicy: &jobsetv1alpha2.FailurePolicy{Rules: []jobsetv1alpha2.FailurePolicyRule{{TargetReplicatedJobs: []string{"cpu"}}}},
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			removeDisabledMPINodeGroups(&tc.spec, tc.groups)
+			if diff := cmp.Diff(tc.want, tc.spec, cmpopts.EquateEmpty()); len(diff) != 0 {
+				t.Errorf("Unexpected JobSet spec (-want, +got): %s", diff)
+			}
+		})
+	}
+}
+
+func TestMergeMPIGroupResources(t *testing.T) {
+	newRJobs := func() (jobsetv1alpha2.ReplicatedJob, *jobsetv1alpha2ac.ReplicatedJobApplyConfiguration) {
+		rJob := mpiNodeGroupsRJob("l40s", nil,
+			corev1.Container{Name: "mpi", Resources: corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("4")}}},
+			corev1.Container{Name: "log-shipper"})
+		rJobApply := jobsetv1alpha2ac.ReplicatedJob().WithName("l40s").WithTemplate(batchv1ac.JobTemplateSpec().
+			WithSpec(batchv1ac.JobSpec().WithTemplate(corev1ac.PodTemplateSpec().WithSpec(corev1ac.PodSpec().WithContainers(
+				corev1ac.Container().WithName("mpi").WithResources(corev1ac.ResourceRequirements().WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("4")})),
+				corev1ac.Container().WithName("log-shipper"),
+			)))))
+		return rJob, rJobApply
+	}
+	gpuLimits := corev1.ResourceList{"nvidia.com/gpu": resource.MustParse("2")}
+	cases := map[string]struct {
+		group     trainerruntime.MPIGroup
+		wantMPI   corev1.ResourceRequirements
+		wantApply *corev1ac.ResourceRequirementsApplyConfiguration
+	}{
+		"no override keeps the runtime resources": {
+			group:     trainerruntime.MPIGroup{JobName: "l40s", ContainerName: "mpi"},
+			wantMPI:   corev1.ResourceRequirements{Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("4")}},
+			wantApply: corev1ac.ResourceRequirements().WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("4")}),
+		},
+		"TrainJob resources are merged into the MPI container only": {
+			group: trainerruntime.MPIGroup{JobName: "l40s", ContainerName: "mpi", Override: &trainer.MPIGroupOverride{
+				ResourcesPerNode: &corev1.ResourceRequirements{Limits: gpuLimits},
+			}},
+			wantMPI: corev1.ResourceRequirements{
+				Limits:   gpuLimits,
+				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("4")},
+			},
+			wantApply: corev1ac.ResourceRequirements().
+				WithLimits(gpuLimits).
+				WithRequests(corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("4")}),
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			rJob, rJobApply := newRJobs()
+			if err := mergeMPIGroupResources(&tc.group, &rJob, rJobApply); err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+			if diff := cmp.Diff(tc.wantMPI, rJob.Template.Spec.Template.Spec.Containers[0].Resources, cmpopts.EquateEmpty()); len(diff) != 0 {
+				t.Errorf("Unexpected typed resources (-want, +got): %s", diff)
+			}
+			if diff := cmp.Diff(tc.wantApply, rJobApply.Template.Spec.Template.Spec.Containers[0].Resources); len(diff) != 0 {
+				t.Errorf("Unexpected apply resources (-want, +got): %s", diff)
+			}
+			if rJobApply.Template.Spec.Template.Spec.Containers[1].Resources != nil {
+				t.Errorf("The sidecar resources must be left untouched")
 			}
 		})
 	}

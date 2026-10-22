@@ -169,6 +169,73 @@ func TestValidateReplicatedJobs(t *testing.T) {
 	}
 }
 
+func TestValidateMPINodeGroups(t *testing.T) {
+	rJob := func(name string, replicas int32, labels map[string]string, containers ...string) jobsetv1alpha2.ReplicatedJob {
+		r := jobsetv1alpha2.ReplicatedJob{Name: name, Replicas: replicas}
+		r.Template.Labels = labels
+		for _, c := range containers {
+			r.Template.Spec.Template.Spec.Containers = append(r.Template.Spec.Template.Spec.Containers, corev1.Container{Name: c})
+		}
+		return r
+	}
+	newSpec := func(numNodes *int32, rJobs ...jobsetv1alpha2.ReplicatedJob) *trainer.TrainingRuntimeSpec {
+		return &trainer.TrainingRuntimeSpec{
+			MLPolicy: &trainer.MLPolicy{NumNodes: numNodes, MLPolicySource: trainer.MLPolicySource{MPI: &trainer.MPIMLPolicySource{
+				Launcher:   trainer.MPILauncher{JobName: constants.Launcher},
+				NodeGroups: []trainer.MPINodeGroup{{JobName: "cpu"}, {JobName: "l40s", ContainerName: "mpi"}},
+			}}},
+			Template: trainer.JobSetTemplateSpec{Spec: jobsetv1alpha2.JobSetSpec{ReplicatedJobs: rJobs}},
+		}
+	}
+	mpiPath := field.NewPath("spec", "mlPolicy", "mpi")
+	cases := map[string]struct {
+		spec      *trainer.TrainingRuntimeSpec
+		wantError field.ErrorList
+	}{
+		"runtime without node groups is not validated": {
+			spec: &trainer.TrainingRuntimeSpec{
+				MLPolicy: &trainer.MLPolicy{NumNodes: ptr.To[int32](2), MLPolicySource: trainer.MLPolicySource{MPI: &trainer.MPIMLPolicySource{}}},
+			},
+		},
+		"valid node groups": {
+			spec: newSpec(nil,
+				rJob("cpu", 1, nil, constants.Node),
+				rJob("l40s", 1, nil, "mpi", "log-shipper"),
+				rJob(constants.Launcher, 1, nil, constants.Node)),
+		},
+		"references must resolve to replicatedJobs and containers with one replica": {
+			spec: newSpec(nil,
+				rJob("cpu", 2, nil, constants.Node),
+				rJob("l40s", 1, nil, constants.Node),
+				rJob("other", 1, nil, constants.Node)),
+			wantError: field.ErrorList{
+				field.Invalid(mpiPath.Child("launcher", "jobName"), constants.Launcher, ""),
+				field.Invalid(mpiPath.Child("nodeGroups").Index(0).Child("jobName"), "cpu", ""),
+				field.Invalid(mpiPath.Child("nodeGroups").Index(1).Child("containerName"), "mpi", ""),
+			},
+		},
+		"mlPolicy numNodes and the trainer ancestor label are rejected": {
+			spec: newSpec(ptr.To[int32](2),
+				rJob("cpu", 1, nil, constants.Node),
+				rJob("l40s", 1, nil, "mpi"),
+				rJob(constants.Launcher, 1, map[string]string{constants.LabelTrainJobAncestor: constants.AncestorTrainer}, constants.Node)),
+			wantError: field.ErrorList{
+				field.Forbidden(field.NewPath("spec", "mlPolicy", "numNodes"), ""),
+				field.Forbidden(field.NewPath("spec", "template", "spec", "replicatedJobs").Index(2).
+					Child("template", "metadata", "labels").Key(constants.LabelTrainJobAncestor), ""),
+			},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			gotErr := validateMPINodeGroups(tc.spec)
+			if diff := cmp.Diff(tc.wantError, gotErr, cmpopts.IgnoreFields(field.Error{}, "Detail", "BadValue")); len(diff) != 0 {
+				t.Errorf("validateMPINodeGroups() mismatch (-want,+got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestTrainingRuntimeValidateUpdate(t *testing.T) {
 	cases := map[string]struct {
 		oldObj    *trainer.TrainingRuntime

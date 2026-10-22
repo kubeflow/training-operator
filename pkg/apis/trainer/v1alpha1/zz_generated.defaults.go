@@ -272,6 +272,33 @@ func SetObjectDefaults_OptimizationJob(in *OptimizationJob) {
 				}
 			}
 		}
+		if in.Spec.TrainJobTemplate.Spec.Trainer.Launcher != nil {
+			for i := range in.Spec.TrainJobTemplate.Spec.Trainer.Launcher.MPIGroupOverride.Env {
+				a := &in.Spec.TrainJobTemplate.Spec.Trainer.Launcher.MPIGroupOverride.Env[i]
+				if a.ValueFrom != nil {
+					if a.ValueFrom.FileKeyRef != nil {
+						if a.ValueFrom.FileKeyRef.Optional == nil {
+							var ptrVar1 bool = false
+							a.ValueFrom.FileKeyRef.Optional = &ptrVar1
+						}
+					}
+				}
+			}
+		}
+		for i := range in.Spec.TrainJobTemplate.Spec.Trainer.NodeGroups {
+			a := &in.Spec.TrainJobTemplate.Spec.Trainer.NodeGroups[i]
+			for j := range a.MPIGroupOverride.Env {
+				b := &a.MPIGroupOverride.Env[j]
+				if b.ValueFrom != nil {
+					if b.ValueFrom.FileKeyRef != nil {
+						if b.ValueFrom.FileKeyRef.Optional == nil {
+							var ptrVar1 bool = false
+							b.ValueFrom.FileKeyRef.Optional = &ptrVar1
+						}
+					}
+				}
+			}
+		}
 	}
 	for i := range in.Spec.TrainJobTemplate.Spec.RuntimePatches {
 		a := &in.Spec.TrainJobTemplate.Spec.RuntimePatches[i]
@@ -412,6 +439,33 @@ func SetObjectDefaults_TrainJob(in *TrainJob) {
 					if a.ValueFrom.FileKeyRef.Optional == nil {
 						var ptrVar1 bool = false
 						a.ValueFrom.FileKeyRef.Optional = &ptrVar1
+					}
+				}
+			}
+		}
+		if in.Spec.Trainer.Launcher != nil {
+			for i := range in.Spec.Trainer.Launcher.MPIGroupOverride.Env {
+				a := &in.Spec.Trainer.Launcher.MPIGroupOverride.Env[i]
+				if a.ValueFrom != nil {
+					if a.ValueFrom.FileKeyRef != nil {
+						if a.ValueFrom.FileKeyRef.Optional == nil {
+							var ptrVar1 bool = false
+							a.ValueFrom.FileKeyRef.Optional = &ptrVar1
+						}
+					}
+				}
+			}
+		}
+		for i := range in.Spec.Trainer.NodeGroups {
+			a := &in.Spec.Trainer.NodeGroups[i]
+			for j := range a.MPIGroupOverride.Env {
+				b := &a.MPIGroupOverride.Env[j]
+				if b.ValueFrom != nil {
+					if b.ValueFrom.FileKeyRef != nil {
+						if b.ValueFrom.FileKeyRef.Optional == nil {
+							var ptrVar1 bool = false
+							b.ValueFrom.FileKeyRef.Optional = &ptrVar1
+						}
 					}
 				}
 			}

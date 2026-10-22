@@ -907,6 +907,71 @@ func TestBuilderTrainer(t *testing.T) {
 	}
 }
 
+func TestBuilderMPIGroups(t *testing.T) {
+	rJob := func(name string, containers ...*corev1ac.ContainerApplyConfiguration) *jobsetv1alpha2ac.ReplicatedJobApplyConfiguration {
+		return jobsetv1alpha2ac.ReplicatedJob().WithName(name).WithTemplate(batchv1ac.JobTemplateSpec().
+			WithSpec(batchv1ac.JobSpec().WithTemplate(corev1ac.PodTemplateSpec().WithSpec(corev1ac.PodSpec().WithContainers(containers...)))))
+	}
+	newJobSet := func() *jobsetv1alpha2ac.JobSetApplyConfiguration {
+		return jobsetv1alpha2ac.JobSet("mixed", "default").WithSpec(jobsetv1alpha2ac.JobSetSpec().WithReplicatedJobs(
+			rJob("l40s",
+				corev1ac.Container().WithName("mpi").WithImage("mpi-app:cuda").WithCommand("/usr/sbin/sshd").
+					WithEnv(corev1ac.EnvVar().WithName("RUNTIME_ENV").WithValue("runtime")),
+				corev1ac.Container().WithName("log-shipper").WithImage("log-shipper:1.0")),
+			rJob(constants.Launcher, corev1ac.Container().WithName(constants.Node).WithImage("mpi-app:cuda")),
+		))
+	}
+	mpiInfo := &runtime.Info{RuntimePolicy: runtime.RuntimePolicy{MLPolicySource: &trainer.MLPolicySource{MPI: &trainer.MPIMLPolicySource{
+		Launcher:   trainer.MPILauncher{JobName: constants.Launcher},
+		NodeGroups: []trainer.MPINodeGroup{{JobName: "l40s", ContainerName: "mpi"}},
+	}}}}
+	cases := map[string]struct {
+		info       *runtime.Info
+		trainJob   *trainer.TrainJob
+		wantJobSet *jobsetv1alpha2ac.JobSetApplyConfiguration
+	}{
+		"no change for runtimes without node groups": {
+			info: &runtime.Info{RuntimePolicy: runtime.RuntimePolicy{MLPolicySource: &trainer.MLPolicySource{MPI: &trainer.MPIMLPolicySource{}}}},
+			trainJob: &trainer.TrainJob{Spec: trainer.TrainJobSpec{Trainer: &trainer.Trainer{
+				NodeGroups: []trainer.MPINodeGroupOverride{{Name: "l40s", MPIGroupOverride: trainer.MPIGroupOverride{Image: ptr.To("mpi-app:cuda-v2")}}},
+			}}},
+			wantJobSet: newJobSet(),
+		},
+		"overrides reach only the MPI container of each group": {
+			info: mpiInfo,
+			trainJob: &trainer.TrainJob{Spec: trainer.TrainJobSpec{Trainer: &trainer.Trainer{
+				Launcher: &trainer.MPILauncherOverride{MPIGroupOverride: trainer.MPIGroupOverride{
+					Command: []string{"mpirun"},
+					Args:    []string{"python", "/app/train.py"},
+				}},
+				NodeGroups: []trainer.MPINodeGroupOverride{{Name: "l40s", MPIGroupOverride: trainer.MPIGroupOverride{
+					Image: ptr.To("mpi-app:cuda-v2"),
+					Env:   []corev1.EnvVar{{Name: "NCCL_DEBUG", Value: "INFO"}},
+				}}},
+			}}},
+			wantJobSet: jobsetv1alpha2ac.JobSet("mixed", "default").WithSpec(jobsetv1alpha2ac.JobSetSpec().WithReplicatedJobs(
+				rJob("l40s",
+					corev1ac.Container().WithName("mpi").WithImage("mpi-app:cuda-v2").WithCommand("/usr/sbin/sshd").
+						WithEnv(
+							corev1ac.EnvVar().WithName("RUNTIME_ENV").WithValue("runtime"),
+							corev1ac.EnvVar().WithName("NCCL_DEBUG").WithValue("INFO"),
+						),
+					corev1ac.Container().WithName("log-shipper").WithImage("log-shipper:1.0")),
+				rJob(constants.Launcher, corev1ac.Container().WithName(constants.Node).WithImage("mpi-app:cuda").
+					WithCommand("mpirun").WithArgs("python", "/app/train.py")),
+			)),
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := NewBuilder(newJobSet()).MPIGroups(tc.info, tc.trainJob).Build()
+			if diff := cmp.Diff(tc.wantJobSet, got); len(diff) != 0 {
+				t.Errorf("Unexpected JobSet from MPIGroups (-want,+got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestBuilderPodLabels(t *testing.T) {
 	cases := map[string]struct {
 		jobSet     *jobsetv1alpha2ac.JobSetApplyConfiguration

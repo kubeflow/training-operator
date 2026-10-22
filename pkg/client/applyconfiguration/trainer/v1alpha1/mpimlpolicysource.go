@@ -40,6 +40,14 @@ type MPIMLPolicySourceApplyConfiguration struct {
 	// runLauncherAsNode defines whether to run training process on the launcher Job.
 	// Defaults to false.
 	RunLauncherAsNode *bool `json:"runLauncherAsNode,omitempty"`
+	// launcher declares the replicatedJob that runs mpirun. It must be set together with nodeGroups.
+	// With launcher and nodeGroups, the MPI plugin finds the launcher and the node groups by
+	// jobName instead of the replicatedJob names `launcher` and `node`, and numProcPerNode is
+	// the default number of slots for the launcher and the node groups that do not set their own.
+	Launcher *MPILauncherApplyConfiguration `json:"launcher,omitempty"`
+	// nodeGroups declares the replicatedJobs whose Pods are MPI hosts. Each group has its own
+	// number of nodes and slots, and its Pods get their own lines in the hostfile.
+	NodeGroups []MPINodeGroupApplyConfiguration `json:"nodeGroups,omitempty"`
 }
 
 // MPIMLPolicySourceApplyConfiguration constructs a declarative configuration of the MPIMLPolicySource type for use with
@@ -77,5 +85,26 @@ func (b *MPIMLPolicySourceApplyConfiguration) WithSSHAuthMountPath(value string)
 // If called multiple times, the RunLauncherAsNode field is set to the value of the last call.
 func (b *MPIMLPolicySourceApplyConfiguration) WithRunLauncherAsNode(value bool) *MPIMLPolicySourceApplyConfiguration {
 	b.RunLauncherAsNode = &value
+	return b
+}
+
+// WithLauncher sets the Launcher field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Launcher field is set to the value of the last call.
+func (b *MPIMLPolicySourceApplyConfiguration) WithLauncher(value *MPILauncherApplyConfiguration) *MPIMLPolicySourceApplyConfiguration {
+	b.Launcher = value
+	return b
+}
+
+// WithNodeGroups adds the given value to the NodeGroups field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the NodeGroups field.
+func (b *MPIMLPolicySourceApplyConfiguration) WithNodeGroups(values ...*MPINodeGroupApplyConfiguration) *MPIMLPolicySourceApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithNodeGroups")
+		}
+		b.NodeGroups = append(b.NodeGroups, *values[i])
+	}
 	return b
 }

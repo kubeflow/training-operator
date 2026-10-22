@@ -244,6 +244,8 @@ type ModelInitializer struct {
 // Trainer represents the desired configuration for the training job.
 // The Trainer spec will override the runtime template
 // which contains this label: `trainer.kubeflow.org/trainjob-ancestor-step: trainer`
+// For MPI runtimes that declare node groups, launcher and nodeGroups replace the other fields.
+// +kubebuilder:validation:XValidation:rule="!(has(self.launcher) || has(self.nodeGroups)) || !(has(self.image) || has(self.command) || has(self.args) || has(self.env) || has(self.numNodes) || has(self.resourcesPerNode) || has(self.resourceClaimsPerNode) || has(self.numProcPerNode))",message="launcher and nodeGroups cannot be combined with image, command, args, env, numNodes, resourcesPerNode, resourceClaimsPerNode or numProcPerNode"
 type Trainer struct {
 	// image is the container image for the training container.
 	// +kubebuilder:validation:MaxLength=500
@@ -304,6 +306,88 @@ type Trainer struct {
 	// +kubebuilder:validation:XValidation:rule="self >= 1",message="numProcPerNode must be greater than or equal to 1"
 	// +optional
 	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
+
+	// launcher overrides the MPI launcher declared in the runtime mlPolicy.mpi.launcher.
+	// It can only be set for MPI runtimes that declare nodeGroups.
+	// +optional
+	Launcher *MPILauncherOverride `json:"launcher,omitempty"`
+
+	// nodeGroups overrides the MPI node groups declared in the runtime mlPolicy.mpi.nodeGroups.
+	// Every name must match the jobName of a node group in the runtime.
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=32
+	// +optional
+	NodeGroups []MPINodeGroupOverride `json:"nodeGroups,omitempty"`
+}
+
+// MPILauncherOverride overrides the MPI launcher of the runtime.
+type MPILauncherOverride struct {
+	// runAsNode overrides mlPolicy.mpi.launcher.runAsNode.
+	// +optional
+	RunAsNode *bool `json:"runAsNode,omitempty"`
+
+	MPIGroupOverride `json:",inline"`
+}
+
+// MPINodeGroupOverride overrides one MPI node group of the runtime.
+type MPINodeGroupOverride struct {
+	// name is the jobName of a node group in the runtime mlPolicy.mpi.nodeGroups.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +required
+	Name string `json:"name,omitempty"`
+
+	// numNodes overrides the number of Pods of the group. 0 disables the group.
+	// +kubebuilder:validation:Minimum=0
+	// +optional
+	NumNodes *int32 `json:"numNodes,omitempty"`
+
+	MPIGroupOverride `json:",inline"`
+}
+
+// MPIGroupOverride holds the fields shared by the MPI launcher and node group overrides.
+// The container fields apply only to the container named by containerName in the runtime,
+// so sidecars and init containers are left untouched.
+type MPIGroupOverride struct {
+	// numProcPerNode overrides the number of slots of each host in the group.
+	// +kubebuilder:validation:XValidation:rule="self >= 1",message="numProcPerNode must be greater than or equal to 1"
+	// +optional
+	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
+
+	// image is the container image for the MPI container of the group.
+	// +kubebuilder:validation:MaxLength=500
+	// +optional
+	Image *string `json:"image,omitempty"`
+
+	// command for the entrypoint of the MPI container of the group.
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=128
+	// +kubebuilder:validation:items:MaxLength=1048576
+	// +optional
+	Command []string `json:"command,omitempty"`
+
+	// args for the entrypoint of the MPI container of the group.
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=128
+	// +kubebuilder:validation:items:MaxLength=1048576
+	// +optional
+	Args []string `json:"args,omitempty"`
+
+	// env is the list of environment variables to set in the MPI container of the group.
+	// These values will be merged with the environments of the container in the runtime.
+	// MPI ranks started over SSH do not inherit the environment of a node group container,
+	// so variables for the ranks belong on the launcher, for example with `mpirun -x`.
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=128
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// resourcesPerNode defines the compute resources for each Pod of the group.
+	// +kubebuilder:validation:XValidation:rule="!has(self.claims) || size(self.claims) == 0",message="claims must not be set in resourcesPerNode"
+	// +optional
+	ResourcesPerNode *corev1.ResourceRequirements `json:"resourcesPerNode,omitempty"`
 }
 
 // TrainerResourceClaim references a ResourceClaimTemplate for every training node Pod.
