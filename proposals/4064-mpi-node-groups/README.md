@@ -29,6 +29,7 @@ A runtime could declare every flavour as its own replicatedJob, but a runtime is
 - Placement fields in the new API. Placement stays in `runtimePatches`, which already targets replicatedJobs by name.
 - Checking that the images of different groups ship compatible MPI versions.
 - More than one JobSet replica per group.
+- DRA claims per node group. `resourceClaimsPerNode` is rejected for runtimes with node groups.
 
 ## Proposal
 
@@ -108,7 +109,7 @@ spec:
       - {key: node.kubernetes.io/unschedulable, operator: Exists, effect: NoSchedule}
 ```
 
-With this KEP, the flavour selectors and tolerations stay in the pod templates of the runtime replicatedJobs, the `workers` entries become `spec.trainer.nodeGroups`, and the pinning and labels move to `runtimePatches`, which can already set `nodeSelector`, `tolerations` and pod labels per replicatedJob.
+With this KEP, the flavour selectors and tolerations stay in the pod templates of the runtime replicatedJobs, the `workers` entries become `spec.trainer.nodeGroups`, and the pinning and labels move to `runtimePatches`, which can already set `nodeSelector`, `tolerations` and pod labels per replicatedJob. The shared `image` moves to the runtime Pod templates or to each group, since `spec.trainer.image` cannot be combined with `nodeGroups`.
 
 ### Notes/Constraints/Caveats (Optional)
 
@@ -128,62 +129,78 @@ The new fields in `trainingruntime_types.go`:
 
 ```go
 // +kubebuilder:validation:XValidation:rule="has(self.launcher) == has(self.nodeGroups)",message="launcher and nodeGroups must be set together"
-// +kubebuilder:validation:XValidation:rule="!(has(self.launcher) && has(self.runLauncherAsNode) && self.runLauncherAsNode)",message="use launcher.runAsNode instead of runLauncherAsNode"
+// +kubebuilder:validation:XValidation:rule="!has(self.launcher) || !has(self.runLauncherAsNode) || !self.runLauncherAsNode",message="runLauncherAsNode must not be set with launcher, use launcher.runAsNode instead"
+// +kubebuilder:validation:XValidation:rule="!has(self.launcher) || !has(self.nodeGroups) || self.nodeGroups.all(g, g.jobName != self.launcher.jobName)",message="a replicatedJob cannot be both the launcher and a node group"
 type MPIMLPolicySource struct {
-	// Existing fields are unchanged. With nodeGroups, numProcPerNode is the
-	// default for the launcher and the groups that do not set their own.
+	// Existing fields are unchanged.
 
-	// launcher declares the replicatedJob that runs mpirun.
+	// launcher declares the replicatedJob that runs mpirun. It must be set together with nodeGroups.
+	// With launcher and nodeGroups, the MPI plugin finds the launcher and the node groups by
+	// jobName instead of the replicatedJob names `launcher` and `node`, and numProcPerNode is
+	// the default number of slots for the launcher and the node groups that do not set their own.
 	// +optional
-	Launcher *MPILauncher `json:"launcher,omitempty"`
+	Launcher MPILauncher `json:"launcher,omitempty,omitzero"`
 
-	// nodeGroups declares the replicatedJobs whose pods are MPI hosts.
+	// nodeGroups declares the replicatedJobs whose Pods are MPI hosts. Each group has its own
+	// number of nodes and slots, and its Pods get their own lines in the hostfile.
 	// +listType=map
 	// +listMapKey=jobName
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=32
 	// +optional
 	NodeGroups []MPINodeGroup `json:"nodeGroups,omitempty"`
 }
 
+// MPILauncher references the replicatedJob that runs mpirun.
 // +kubebuilder:validation:XValidation:rule="!has(self.numProcPerNode) || (has(self.runAsNode) && self.runAsNode)",message="numProcPerNode requires runAsNode"
 type MPILauncher struct {
 	// jobName is the name of the launcher replicatedJob.
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
 	// +required
-	JobName string `json:"jobName"`
+	JobName string `json:"jobName,omitempty"`
 
-	// containerName is the container that runs mpirun.
+	// containerName is the name of the container that runs mpirun.
 	// Defaults to node.
 	// +kubebuilder:default=node
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	// +optional
-	ContainerName *string `json:"containerName,omitempty"`
+	ContainerName string `json:"containerName,omitempty"`
 
-	// runAsNode adds the launcher to the hostfile. It replaces runLauncherAsNode.
+	// runAsNode defines whether the launcher is also an MPI host and gets a line in the hostfile.
+	// It replaces runLauncherAsNode for runtimes with nodeGroups.
 	// Defaults to false.
 	// +kubebuilder:default=false
 	// +optional
 	RunAsNode *bool `json:"runAsNode,omitempty"`
 
-	// numProcPerNode is the number of slots of the launcher.
+	// numProcPerNode is the number of slots of the launcher when runAsNode is true.
+	// Defaults to mlPolicy.mpi.numProcPerNode.
 	// +kubebuilder:validation:XValidation:rule="self >= 1",message="numProcPerNode must be greater than or equal to 1"
 	// +optional
 	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
 }
 
+// MPINodeGroup references a replicatedJob whose Pods are MPI hosts.
 type MPINodeGroup struct {
 	// jobName is the name of the replicatedJob.
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
 	// +required
-	JobName string `json:"jobName"`
+	JobName string `json:"jobName,omitempty"`
 
-	// containerName is the container that runs sshd.
+	// containerName is the name of the container that runs the SSH server of the MPI host.
 	// Defaults to node.
 	// +kubebuilder:default=node
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	// +optional
-	ContainerName *string `json:"containerName,omitempty"`
+	ContainerName string `json:"containerName,omitempty"`
 
-	// numNodes is the number of pods in the group, one MPI host each.
-	// 0 leaves the group out unless a TrainJob enables it.
+	// numNodes is the number of Pods of the group, each one an MPI host.
+	// A group with 0 nodes is left out of the JobSet unless a TrainJob enables it,
+	// so a runtime can offer groups that TrainJobs opt into.
 	// Defaults to 1.
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=0
@@ -191,6 +208,8 @@ type MPINodeGroup struct {
 	NumNodes *int32 `json:"numNodes,omitempty"`
 
 	// numProcPerNode is the number of slots of each host in the group.
+	// Defaults to mlPolicy.mpi.numProcPerNode. When it resolves to 1 and the group container
+	// requests more than one GPU, the number of GPUs is used instead.
 	// +kubebuilder:validation:XValidation:rule="self >= 1",message="numProcPerNode must be greater than or equal to 1"
 	// +optional
 	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
@@ -200,21 +219,26 @@ type MPINodeGroup struct {
 The new fields in `trainjob_types.go`:
 
 ```go
-// +kubebuilder:validation:XValidation:rule="!(has(self.launcher) || has(self.nodeGroups)) || !(has(self.image) || has(self.command) || has(self.args) || has(self.env) || has(self.numNodes) || has(self.resourcesPerNode) || has(self.numProcPerNode))",message="launcher and nodeGroups cannot be combined with the other trainer fields"
+// For MPI runtimes that declare node groups, launcher and nodeGroups replace the other fields.
+// +kubebuilder:validation:XValidation:rule="!(has(self.launcher) || has(self.nodeGroups)) || !(has(self.image) || has(self.command) || has(self.args) || has(self.env) || has(self.numNodes) || has(self.resourcesPerNode) || has(self.resourceClaimsPerNode) || has(self.numProcPerNode))",message="launcher and nodeGroups cannot be combined with image, command, args, env, numNodes, resourcesPerNode, resourceClaimsPerNode or numProcPerNode"
 type Trainer struct {
 	// Existing fields are unchanged.
 
-	// launcher overrides mlPolicy.mpi.launcher.
+	// launcher overrides the MPI launcher declared in the runtime mlPolicy.mpi.launcher.
+	// It can only be set for MPI runtimes that declare nodeGroups.
 	// +optional
 	Launcher *MPILauncherOverride `json:"launcher,omitempty"`
 
-	// nodeGroups overrides mlPolicy.mpi.nodeGroups.
+	// nodeGroups overrides the MPI node groups declared in the runtime mlPolicy.mpi.nodeGroups.
+	// Every name must match the jobName of a node group in the runtime.
 	// +listType=map
 	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=32
 	// +optional
 	NodeGroups []MPINodeGroupOverride `json:"nodeGroups,omitempty"`
 }
 
+// MPILauncherOverride overrides the MPI launcher of the runtime.
 type MPILauncherOverride struct {
 	// runAsNode overrides mlPolicy.mpi.launcher.runAsNode.
 	// +optional
@@ -223,13 +247,15 @@ type MPILauncherOverride struct {
 	MPIGroupOverride `json:",inline"`
 }
 
+// MPINodeGroupOverride overrides one MPI node group of the runtime.
 type MPINodeGroupOverride struct {
-	// name is the jobName of a group in mlPolicy.mpi.nodeGroups.
+	// name is the jobName of a node group in the runtime mlPolicy.mpi.nodeGroups.
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
 	// +required
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 
-	// numNodes overrides the number of pods in the group. 0 disables the group.
+	// numNodes overrides the number of Pods of the group. 0 disables the group.
 	// +kubebuilder:validation:Minimum=0
 	// +optional
 	NumNodes *int32 `json:"numNodes,omitempty"`
@@ -237,20 +263,47 @@ type MPINodeGroupOverride struct {
 	MPIGroupOverride `json:",inline"`
 }
 
-// MPIGroupOverride holds the fields shared by the launcher and the node groups.
-// The container fields apply only to the container named by containerName.
+// MPIGroupOverride holds the fields shared by the MPI launcher and node group overrides.
+// The container fields apply only to the container named by containerName in the runtime,
+// so sidecars and init containers are left untouched.
 type MPIGroupOverride struct {
 	// numProcPerNode overrides the number of slots of each host in the group.
 	// +kubebuilder:validation:XValidation:rule="self >= 1",message="numProcPerNode must be greater than or equal to 1"
 	// +optional
 	NumProcPerNode *int32 `json:"numProcPerNode,omitempty"`
 
-	// The fields below have the same markers and merge semantics as the
-	// fields with the same name in Trainer.
-	Image            *string                      `json:"image,omitempty"`
-	Command          []string                     `json:"command,omitempty"`
-	Args             []string                     `json:"args,omitempty"`
-	Env              []corev1.EnvVar              `json:"env,omitempty"`
+	// image is the container image for the MPI container of the group.
+	// +kubebuilder:validation:MaxLength=500
+	// +optional
+	Image *string `json:"image,omitempty"`
+
+	// command for the entrypoint of the MPI container of the group.
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=128
+	// +kubebuilder:validation:items:MaxLength=1048576
+	// +optional
+	Command []string `json:"command,omitempty"`
+
+	// args for the entrypoint of the MPI container of the group.
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=128
+	// +kubebuilder:validation:items:MaxLength=1048576
+	// +optional
+	Args []string `json:"args,omitempty"`
+
+	// env is the list of environment variables to set in the MPI container of the group.
+	// These values will be merged with the environments of the container in the runtime.
+	// MPI ranks started over SSH do not inherit the environment of a node group container,
+	// so variables for the ranks belong on the launcher, for example with `mpirun -x`.
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=128
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// resourcesPerNode defines the compute resources for each Pod of the group.
+	// +kubebuilder:validation:XValidation:rule="!has(self.claims) || size(self.claims) == 0",message="claims must not be set in resourcesPerNode"
+	// +optional
 	ResourcesPerNode *corev1.ResourceRequirements `json:"resourcesPerNode,omitempty"`
 }
 ```
@@ -261,8 +314,8 @@ Matching and overrides:
 - `spec.trainer.launcher` targets the runtime launcher. Each `spec.trainer.nodeGroups[].name` must match a runtime `jobName`, so a TrainJob sizes the groups a runtime offers but cannot add new ones.
 - Values resolve field by field: the TrainJob entry, then the runtime entry, then `mlPolicy.mpi.numProcPerNode` for slots. As today ([`mpi.go`](https://github.com/kubeflow/trainer/blob/a08836af1a9b1b03db4176930f94f0df15c25b7d/pkg/runtime/framework/plugins/mpi/mpi.go#L128-L139)), slots that resolve to 1 are replaced by the GPU count of the group.
 - `image`, `command`, `args`, `env` and `resourcesPerNode` go only to the MPI container of the group, so sidecars and init containers are untouched. `env` is upserted and `resourcesPerNode` merged as the flat fields are today.
-- A group whose `numNodes` resolves to 0 is removed from the JobSet, and `dependsOn` entries that point to it are dropped. At least one MPI host must remain.
-- When the runtime declares `nodeGroups`, the flat `spec.trainer` fields are rejected, and `mlPolicy.numNodes` must be unset. The new TrainJob fields are rejected on runtimes without `nodeGroups`.
+- A group whose `numNodes` resolves to 0 is removed from the JobSet, together with the `dependsOn`, `successPolicy` and `failurePolicy` entries that reference it. At least one MPI host must remain.
+- When the runtime declares `nodeGroups`, the flat `spec.trainer` fields, `resourceClaimsPerNode` included, are rejected, `mlPolicy.numNodes` must be unset, and no replicatedJob may carry the `trainjob-ancestor-step: trainer` label, since the launcher is the trainer step. The new TrainJob fields are rejected on runtimes without `nodeGroups`.
 
 With groups `cpu` (32 slots), `l40s` and `w7900` and a launcher that runs as a node, a TrainJob `mixed` that enables one `cpu` host, two single GPU `l40s` pods and one `w7900` host with 2 slots gets this hostfile, in replicatedJob order:
 
@@ -277,12 +330,12 @@ mixed-launcher-0-0.mixed slots=1
 Controller changes:
 
 - The MPI plugin resolves every group in `EnforceMLPolicy`, sets the PodSet count of each group, mounts the SSH secret on every group and the launcher, and writes each group's slots on its own hostfile lines. `Validate` checks the TrainJob against the runtime.
-- The JobSet builder and the runtime merge in `trainingruntime.go` apply the group fields to the group's container and find the launcher by `launcher.jobName`, as does the TrainJob status plugin ([`trainjobstatus.go`](https://github.com/kubeflow/trainer/blob/a08836af1a9b1b03db4176930f94f0df15c25b7d/pkg/runtime/framework/plugins/trainjobstatus/trainjobstatus.go#L92)). Runtimes that use the new fields need no ancestor label.
-- The TrainingRuntime webhook checks that every `jobName` and `containerName` exists and that each replicatedJob has at most one role.
+- The JobSet builder and the runtime merge in `trainingruntime.go` apply the group fields to the group's container. The runtime merge also removes the disabled groups and marks the launcher PodSet as the trainer step, so plugins that look for it, such as the TrainJob status plugin ([`trainjobstatus.go`](https://github.com/kubeflow/trainer/blob/a08836af1a9b1b03db4176930f94f0df15c25b7d/pkg/runtime/framework/plugins/trainjobstatus/trainjobstatus.go#L92)), find it without the ancestor label.
+- The TrainingRuntime and ClusterTrainingRuntime webhooks check that every `jobName` and `containerName` exists and that each referenced replicatedJob has `replicas` 1, and reject the ancestor label and `mlPolicy.numNodes`. The CEL rules reject a replicatedJob that is both the launcher and a node group.
 
 ### Test Plan
 
-[x] I/we understand the owners of the involved components may require updates to existing tests to make this code solid enough prior to committing the changes necessary to implement this enhancement.
+- [x] I/we understand the owners of the involved components may require updates to existing tests to make this code solid enough prior to committing the changes necessary to implement this enhancement.
 
 #### Prerequisite testing updates
 
@@ -312,6 +365,7 @@ The new fields are optional additions to `v1alpha1` and graduate with the API.
 - 2026-09-14: Issue [#4064](https://github.com/kubeflow/trainer/issues/4064) opened.
 - 2026-09-30: Alternative with a flat launcher proposed in [#4064](https://github.com/kubeflow/trainer/issues/4064#issuecomment-5901663962).
 - 2026-09-30: KEP drafted. A prototype with the same input shape, built on plain Jobs, runs at CERN, including on AMD W7900 nodes.
+- 2026-10-22: Draft implementation in #1234.
 
 ## Drawbacks
 
