@@ -499,23 +499,28 @@ func TestNewInfo(t *testing.T) {
 
 func TestSetContainerImageFromTrainer(t *testing.T) {
 	cases := map[string]struct {
-		container  *Container
-		jobTrainer *trainer.Trainer
-		wantImage  string
+		container     *Container
+		jobTrainer    *trainer.Trainer
+		wantContainer *Container
 	}{
 		"TrainJob image replaces the runtime image": {
-			container:  &Container{Name: constants.Node, Image: "test:runtime"},
-			jobTrainer: &trainer.Trainer{Image: ptr.To("test:trainjob")},
-			wantImage:  "test:trainjob",
+			container:     &Container{Name: constants.Node, Image: "test:runtime"},
+			jobTrainer:    &trainer.Trainer{Image: ptr.To("test:trainjob")},
+			wantContainer: &Container{Name: constants.Node, Image: "test:trainjob"},
+		},
+		"TrainJob image is set when the runtime has no image": {
+			container:     &Container{Name: constants.Node},
+			jobTrainer:    &trainer.Trainer{Image: ptr.To("test:trainjob")},
+			wantContainer: &Container{Name: constants.Node, Image: "test:trainjob"},
 		},
 		"runtime image is kept without a TrainJob image": {
-			container:  &Container{Name: constants.Node, Image: "test:runtime"},
-			jobTrainer: &trainer.Trainer{},
-			wantImage:  "test:runtime",
+			container:     &Container{Name: constants.Node, Image: "test:runtime"},
+			jobTrainer:    &trainer.Trainer{},
+			wantContainer: &Container{Name: constants.Node, Image: "test:runtime"},
 		},
 		"runtime image is kept without a TrainJob trainer": {
-			container: &Container{Name: constants.Node, Image: "test:runtime"},
-			wantImage: "test:runtime",
+			container:     &Container{Name: constants.Node, Image: "test:runtime"},
+			wantContainer: &Container{Name: constants.Node, Image: "test:runtime"},
 		},
 		"nil container is ignored": {
 			jobTrainer: &trainer.Trainer{Image: ptr.To("test:trainjob")},
@@ -524,8 +529,8 @@ func TestSetContainerImageFromTrainer(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			SetContainerImageFromTrainer(tc.container, tc.jobTrainer)
-			if tc.container != nil && tc.container.Image != tc.wantImage {
-				t.Errorf("Unexpected image: want %q, got %q", tc.wantImage, tc.container.Image)
+			if diff := cmp.Diff(tc.wantContainer, tc.container); len(diff) != 0 {
+				t.Errorf("Unexpected container (-want, +got): %s", diff)
 			}
 		})
 	}
