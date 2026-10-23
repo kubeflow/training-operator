@@ -557,6 +557,8 @@ func TestOptionalTrainerFields(t *testing.T) {
 		// wantViewImage defaults to constants.FluxInstallerImage when empty.
 		wantViewImage string
 		wantHostlist  string
+		// wantImage is the image of the trainer container, which comes from the TrainJob.
+		wantImage string
 	}{
 		"trainer is not set": {
 			podSetCount:  3,
@@ -569,6 +571,7 @@ func TestOptionalTrainerFields(t *testing.T) {
 			jobTrainer:   utiltesting.MakeTrainJobTrainerWrapper().Container("image", []string{"python", "train.py"}, nil, nil).Obj(),
 			wantFlags:    "-N 2 -n 2",
 			wantHostlist: "test-job-node-0-[0-1]",
+			wantImage:    "image",
 		},
 		"numProcPerNode is not set in the runtime and TrainJob": {
 			podSetCount:  2,
@@ -657,6 +660,9 @@ func TestOptionalTrainerFields(t *testing.T) {
 			}
 			if want := cmp.Or(tc.wantViewImage, constants.FluxInstallerImage); viewImage != want {
 				t.Errorf("flux-installer image = %q; want %q", viewImage, want)
+			}
+			if got := info.FindContainerByPodSetAncestorContainerName(constants.AncestorTrainer, constants.Node).Image; got != tc.wantImage {
+				t.Errorf("trainer image = %q; want %q", got, tc.wantImage)
 			}
 
 			var objs []apiruntime.ApplyConfiguration

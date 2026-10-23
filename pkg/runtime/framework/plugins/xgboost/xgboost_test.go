@@ -614,7 +614,8 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 						Count:             ptr.To[int32](2),
 						SinglePodRequests: make(corev1.ResourceList),
 						Containers: []runtime.Container{{
-							Name: constants.Node,
+							Name:  constants.Node,
+							Image: "xgboost/xgboost:latest",
 							Ports: []corev1ac.ContainerPortApplyConfiguration{{
 								ContainerPort: ptr.To(constants.ContainerTrainerPort),
 							}},
@@ -932,7 +933,8 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 						Count:             ptr.To[int32](2),
 						SinglePodRequests: make(corev1.ResourceList),
 						Containers: []runtime.Container{{
-							Name: constants.Node,
+							Name:  constants.Node,
+							Image: "xgboost/xgboost:latest",
 							Ports: []corev1ac.ContainerPortApplyConfiguration{{
 								ContainerPort: ptr.To(constants.ContainerTrainerPort),
 							}},
@@ -1027,7 +1029,8 @@ func TestXGBoostEnforceMLPolicy(t *testing.T) {
 						Count:             ptr.To[int32](2),
 						SinglePodRequests: make(corev1.ResourceList),
 						Containers: []runtime.Container{{
-							Name: constants.Node,
+							Name:  constants.Node,
+							Image: "xgboost/xgboost:latest",
 							Ports: []corev1ac.ContainerPortApplyConfiguration{{
 								ContainerPort: ptr.To(constants.ContainerTrainerPort),
 							}},

@@ -204,10 +204,9 @@ func TemplateSpecApply[A any](info *Info) (*A, bool) {
 	return spec, ok
 }
 
-// ApplyTrainerImage sets the image of the given trainer container from the TrainJob trainer.
-// It is called by the MLPolicy plugins in EnforceMLPolicy, so each plugin decides which
-// containers run the TrainJob image.
-func ApplyTrainerImage(container *Container, jobTrainer *trainer.Trainer) {
+// SetContainerImageFromTrainer sets the container image from the TrainJob trainer image.
+// It is a no-op if the container is nil or the TrainJob trainer image is not set.
+func SetContainerImageFromTrainer(container *Container, jobTrainer *trainer.Trainer) {
 	if container != nil && jobTrainer != nil && jobTrainer.Image != nil {
 		container.Image = *jobTrainer.Image
 	}

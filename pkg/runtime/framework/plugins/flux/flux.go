@@ -128,6 +128,8 @@ func (f *Flux) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) e
 		return nil
 	}
 
+	runtime.SetContainerImageFromTrainer(info.FindContainerByPodSetAncestorContainerName(constants.AncestorTrainer, constants.Node), trainJob.Spec.Trainer)
+
 	settings := f.brokerSettingsFromEnvironment(trainJob, info)
 	configMapName := fmt.Sprintf("%s-flux-entrypoint", trainJob.Name)
 	curveSecretName := fmt.Sprintf("%s-flux-curve", trainJob.Name)

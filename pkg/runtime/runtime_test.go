@@ -497,7 +497,7 @@ func TestNewInfo(t *testing.T) {
 	}
 }
 
-func TestApplyTrainerImage(t *testing.T) {
+func TestSetContainerImageFromTrainer(t *testing.T) {
 	cases := map[string]struct {
 		container  *Container
 		jobTrainer *trainer.Trainer
@@ -523,7 +523,7 @@ func TestApplyTrainerImage(t *testing.T) {
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			ApplyTrainerImage(tc.container, tc.jobTrainer)
+			SetContainerImageFromTrainer(tc.container, tc.jobTrainer)
 			if tc.container != nil && tc.container.Image != tc.wantImage {
 				t.Errorf("Unexpected image: want %q, got %q", tc.wantImage, tc.container.Image)
 			}
