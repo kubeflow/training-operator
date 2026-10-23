@@ -1017,7 +1017,7 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 														WithArgs("args:openssh").
 														WithCommand("command:openssh").
 														WithResources(nodeContainerRequests("1", "4Gi")).
-														WithImage("test:openssh").
+														WithImage("test:trainjob").
 														WithVolumeMounts(
 															corev1ac.VolumeMount().
 																WithName(jobsetplgconsts.VolumeNameInitializer).
@@ -1207,7 +1207,8 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 								corev1.ResourceMemory: resource.MustParse("4Gi"),
 							},
 							Containers: []runtime.Container{{
-								Name: constants.Node,
+								Name:  constants.Node,
+								Image: "test:trainjob",
 								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
 									*corev1ac.VolumeMount().
 										WithName(jobsetplgconsts.VolumeNameInitializer).
@@ -1404,7 +1405,7 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 						corev1.ResourceCPU:    resource.MustParse("1"),
 						corev1.ResourceMemory: resource.MustParse("4Gi"),
 					}).
-					Container(constants.Node, constants.Node, "test:openssh", []string{"command:openssh"}, []string{"args:openssh"}, corev1.ResourceList{
+					Container(constants.Node, constants.Node, "test:trainjob", []string{"command:openssh"}, []string{"args:openssh"}, corev1.ResourceList{
 						corev1.ResourceCPU:    resource.MustParse("1"),
 						corev1.ResourceMemory: resource.MustParse("4Gi"),
 					}).

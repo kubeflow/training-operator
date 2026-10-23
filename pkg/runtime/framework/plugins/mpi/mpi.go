@@ -121,8 +121,10 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 		return nil
 	}
 
-	// The trainer step of an MPI runtime is the launcher, which runs mpirun.
+	// The TrainJob image runs mpirun on the launcher, the trainer step, and the MPI processes
+	// on the nodes, which must ship the same application and MPI versions as the launcher.
 	runtime.ApplyTrainerImage(info.FindContainerByPodSetAncestorContainerName(constants.AncestorTrainer, constants.Node), trainJob.Spec.Trainer)
+	runtime.ApplyTrainerImage(info.FindContainerByPodSetName(constants.Node, constants.Node), trainJob.Spec.Trainer)
 
 	// TrainJob contains the actual information for the Trainer.
 	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumNodes != nil {

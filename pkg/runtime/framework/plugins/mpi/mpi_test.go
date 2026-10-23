@@ -1475,10 +1475,10 @@ func TestMPITrainerImage(t *testing.T) {
 		wantLauncher string
 		wantNode     string
 	}{
-		"TrainJob image is set on the launcher, the trainer step of MPI runtimes": {
+		"TrainJob image is set on the launcher and the nodes": {
 			trainer:      &trainer.Trainer{Image: ptr.To("test:trainjob")},
 			wantLauncher: "test:trainjob",
-			wantNode:     "test:runtime",
+			wantNode:     "test:trainjob",
 		},
 		"runtime image is kept without a TrainJob image": {
 			trainer:      &trainer.Trainer{},
