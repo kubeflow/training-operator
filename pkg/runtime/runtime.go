@@ -204,6 +204,15 @@ func TemplateSpecApply[A any](info *Info) (*A, bool) {
 	return spec, ok
 }
 
+// ApplyTrainerImage sets the image of the given trainer container from the TrainJob trainer.
+// It is called by the MLPolicy plugins in EnforceMLPolicy, so each plugin decides which
+// containers run the TrainJob image.
+func ApplyTrainerImage(container *Container, jobTrainer *trainer.Trainer) {
+	if container != nil && jobTrainer != nil && jobTrainer.Image != nil {
+		container.Image = *jobTrainer.Image
+	}
+}
+
 // FindContainerByPodSetAncestorContainerName finds runtime.Container from Info.TemplateSpec.PodSet by PodSet Ancestor and Container name.
 func (i *Info) FindContainerByPodSetAncestorContainerName(psAncestor, containerName string) *Container {
 	ps := i.FindPodSetByAncestor(psAncestor)

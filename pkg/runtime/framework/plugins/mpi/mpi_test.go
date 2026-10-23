@@ -1455,3 +1455,55 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestMPITrainerImage(t *testing.T) {
+	newInfo := func() *runtime.Info {
+		return runtime.NewInfo(
+			runtime.WithMLPolicySource(utiltesting.MakeMLPolicyWrapper().
+				WithMLPolicySource(*utiltesting.MakeMLPolicySourceWrapper().
+					MPIPolicy(ptr.To[int32](1), trainer.MPIImplementationOpenMPI, ptr.To("/root/.ssh"), ptr.To(false)).
+					Obj()).
+				Obj()),
+			runtime.WithPodSet(constants.Launcher, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
+				WithContainers(corev1ac.Container().WithName(constants.Node).WithImage("test:runtime"))),
+			runtime.WithPodSet(constants.Node, nil, 1, corev1.PodSpec{}, corev1ac.PodSpec().
+				WithContainers(corev1ac.Container().WithName(constants.Node).WithImage("test:runtime"))),
+		)
+	}
+	cases := map[string]struct {
+		trainer      *trainer.Trainer
+		wantLauncher string
+		wantNode     string
+	}{
+		"TrainJob image is set on the launcher, the trainer step of MPI runtimes": {
+			trainer:      &trainer.Trainer{Image: ptr.To("test:trainjob")},
+			wantLauncher: "test:trainjob",
+			wantNode:     "test:runtime",
+		},
+		"runtime image is kept without a TrainJob image": {
+			trainer:      &trainer.Trainer{},
+			wantLauncher: "test:runtime",
+			wantNode:     "test:runtime",
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			_, ctx := ktesting.NewTestContext(t)
+			p, err := New(ctx, utiltesting.NewClientBuilder().Build(), nil, nil)
+			if err != nil {
+				t.Fatalf("Failed to initialize MPI plugin: %v", err)
+			}
+			info := newInfo()
+			trainJob := utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").Trainer(tc.trainer).Obj()
+			if err = p.(framework.EnforceMLPolicyPlugin).EnforceMLPolicy(info, trainJob); err != nil {
+				t.Fatalf("Unexpected error from EnforceMLPolicy: %v", err)
+			}
+			if got := info.FindContainerByPodSetName(constants.Launcher, constants.Node).Image; got != tc.wantLauncher {
+				t.Errorf("Unexpected launcher image: want %q, got %q", tc.wantLauncher, got)
+			}
+			if got := info.FindContainerByPodSetName(constants.Node, constants.Node).Image; got != tc.wantNode {
+				t.Errorf("Unexpected node image: want %q, got %q", tc.wantNode, got)
+			}
+		})
+	}
+}

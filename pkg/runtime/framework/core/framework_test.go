@@ -1116,7 +1116,8 @@ func TestRunComponentBuilderPlugins(t *testing.T) {
 								corev1.ResourceMemory: resource.MustParse("4Gi"),
 							},
 							Containers: []runtime.Container{{
-								Name: constants.Node,
+								Name:  constants.Node,
+								Image: "test:trainjob",
 								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
 									*corev1ac.VolumeMount().
 										WithName(jobsetplgconsts.VolumeNameInitializer).
@@ -1503,6 +1504,7 @@ test-job-node-0-1.test-job slots=1
 								corev1.ResourceMemory: resource.MustParse("8Gi"),
 							},
 							Containers: []runtime.Container{{
+								Name: constants.Node,
 								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
 									*corev1ac.VolumeMount().
 										WithName(jobsetplgconsts.VolumeNameInitializer).
@@ -1810,6 +1812,8 @@ test-job-node-0-1.test-job slots=1
 								corev1.ResourceMemory: resource.MustParse("8Gi"),
 							},
 							Containers: []runtime.Container{{
+								Name:  constants.Node,
+								Image: "test:trainjob",
 								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
 									*corev1ac.VolumeMount().
 										WithName(jobsetplgconsts.VolumeNameInitializer).
@@ -1928,6 +1932,7 @@ test-job-node-0-1.test-job slots=1
 								corev1.ResourceMemory: resource.MustParse("4Gi"),
 							},
 							Containers: []runtime.Container{{
+								Name: constants.Node,
 								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
 									*corev1ac.VolumeMount().
 										WithName(jobsetplgconsts.VolumeNameInitializer).
@@ -2130,6 +2135,8 @@ test-job-node-0-1.test-job slots=1
 								corev1.ResourceMemory: resource.MustParse("4Gi"),
 							},
 							Containers: []runtime.Container{{
+								Name:  constants.Node,
+								Image: "test:trainjob",
 								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
 									*corev1ac.VolumeMount().
 										WithName(jobsetplgconsts.VolumeNameInitializer).

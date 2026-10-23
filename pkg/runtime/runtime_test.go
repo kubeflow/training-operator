@@ -28,6 +28,7 @@ import (
 	"k8s.io/utils/ptr"
 	jobsetv1alpha2ac "sigs.k8s.io/jobset/client-go/applyconfiguration/jobset/v1alpha2"
 
+	trainer "github.com/kubeflow/trainer/v2/pkg/apis/trainer/v1alpha1"
 	"github.com/kubeflow/trainer/v2/pkg/constants"
 	jobsetplgconsts "github.com/kubeflow/trainer/v2/pkg/runtime/framework/plugins/jobset/constants"
 )
@@ -491,6 +492,40 @@ func TestNewInfo(t *testing.T) {
 			info := NewInfo(tc.infoOpts...)
 			if diff := cmp.Diff(tc.wantInfo, info, cmpOpts...); len(diff) != 0 {
 				t.Errorf("Unexpected runtime.Info (-want,+got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestApplyTrainerImage(t *testing.T) {
+	cases := map[string]struct {
+		container  *Container
+		jobTrainer *trainer.Trainer
+		wantImage  string
+	}{
+		"TrainJob image replaces the runtime image": {
+			container:  &Container{Name: constants.Node, Image: "test:runtime"},
+			jobTrainer: &trainer.Trainer{Image: ptr.To("test:trainjob")},
+			wantImage:  "test:trainjob",
+		},
+		"runtime image is kept without a TrainJob image": {
+			container:  &Container{Name: constants.Node, Image: "test:runtime"},
+			jobTrainer: &trainer.Trainer{},
+			wantImage:  "test:runtime",
+		},
+		"runtime image is kept without a TrainJob trainer": {
+			container: &Container{Name: constants.Node, Image: "test:runtime"},
+			wantImage: "test:runtime",
+		},
+		"nil container is ignored": {
+			jobTrainer: &trainer.Trainer{Image: ptr.To("test:trainjob")},
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			ApplyTrainerImage(tc.container, tc.jobTrainer)
+			if tc.container != nil && tc.container.Image != tc.wantImage {
+				t.Errorf("Unexpected image: want %q, got %q", tc.wantImage, tc.container.Image)
 			}
 		})
 	}

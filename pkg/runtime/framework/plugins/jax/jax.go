@@ -68,6 +68,8 @@ func (j *Jax) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 
 	// JAX envs and the trainer port are injected even when spec.trainer is omitted.
 	if trainerContainer := info.FindContainerByPodSetAncestorContainerName(constants.AncestorTrainer, constants.Node); trainerContainer != nil {
+		runtime.ApplyTrainerImage(trainerContainer, trainJob.Spec.Trainer)
+
 		// Get the number of nodes for distributed setup
 		numNodes := ptr.Deref(ptr.Deref(trainerPS, runtime.PodSet{}).Count, 1)
 
