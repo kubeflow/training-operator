@@ -116,6 +116,13 @@ Active deadlines, suspend/resume for TrainJobs
 Monitor training progress and custom metrics in TrainJob status
 ::::
 
+::::{grid-item-card} Hyperparameter Optimization
+:link: optimizationjob
+:link-type: doc
+
+Tune TrainJob hyperparameters with OptimizationJob
+::::
+
 :::::
 
 ## Local Development
@@ -169,6 +176,7 @@ xgboost
 megatron
 flux
 trainjob-progress
+optimizationjob
 data-cache
 builtin-trainer/index
 local-execution/index
