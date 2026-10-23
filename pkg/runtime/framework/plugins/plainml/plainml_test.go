@@ -213,37 +213,6 @@ func TestPlainML(t *testing.T) {
 				Scheduler: &runtime.Scheduler{PodLabels: make(map[string]string)},
 			},
 		},
-		"trainJob trainer image is set on the trainer container of XGBoost runtimes": {
-			trainJob: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "test").
-				Trainer(utiltesting.MakeTrainJobTrainerWrapper().Container("test:trainjob", nil, nil, nil).Obj()).
-				Obj(),
-			info: runtime.NewInfo(
-				runtime.WithMLPolicySource(&trainer.MLPolicy{MLPolicySource: trainer.MLPolicySource{XGBoost: &trainer.XGBoostMLPolicySource{}}}),
-				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
-					WithContainers(corev1ac.Container().WithName(constants.Node).WithImage("test:runtime")),
-				),
-			),
-			wantInfo: &runtime.Info{
-				Labels:      make(map[string]string),
-				Annotations: make(map[string]string),
-				RuntimePolicy: runtime.RuntimePolicy{
-					MLPolicySource: &trainer.MLPolicySource{XGBoost: &trainer.XGBoostMLPolicySource{}},
-				},
-				TemplateSpec: runtime.TemplateSpec{
-					PodSets: []runtime.PodSet{{
-						Name:              constants.Node,
-						Ancestor:          ptr.To(constants.AncestorTrainer),
-						Count:             ptr.To[int32](1),
-						SinglePodRequests: make(corev1.ResourceList),
-						Containers: []runtime.Container{{
-							Name:  constants.Node,
-							Image: "test:trainjob",
-						}},
-					}},
-				},
-				Scheduler: &runtime.Scheduler{PodLabels: make(map[string]string)},
-			},
-		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

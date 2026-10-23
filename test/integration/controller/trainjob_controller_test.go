@@ -1414,6 +1414,8 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 							Completions(1, constants.DatasetInitializer, constants.ModelInitializer, constants.Launcher).
 							NumNodes(2).
 							Container(constants.Node, constants.Node, "test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+							// The MPI plugin sets the TrainJob image on the launcher and the nodes.
+							Container(constants.Launcher, constants.Node, "test:trainjob", []string{"mpirun"}, []string{"echo.sh"}, nil).
 							Volumes(constants.Launcher,
 								corev1.Volume{
 									Name: constants.MPISSHAuthVolumeName,
