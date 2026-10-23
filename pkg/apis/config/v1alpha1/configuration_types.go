@@ -267,6 +267,19 @@ type TLSOptions struct {
 	// +kubebuilder:validation:items:MaxLength=100
 	CipherSuites []string `json:"cipherSuites,omitempty"`
 
+	// curvePreferences is the set of allowed TLS key exchange mechanisms.
+	// Go selects from this list using its internal preference order; list
+	// order is ignored. If empty, Go defaults apply.
+	// Supported values: CurveP256, CurveP384, CurveP521, X25519,
+	// X25519MLKEM768, SecP256r1MLKEM768, SecP384r1MLKEM1024.
+	// Unrecognized values fail controller startup.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=32
+	// +kubebuilder:validation:UniqueItems=true
+	// +kubebuilder:validation:items:MaxLength=32
+	CurvePreferences []string `json:"curvePreferences,omitempty"`
+
 	// nextProtos is the list of application-level protocols negotiated during
 	// the TLS handshake. Set to ["h2", "http/1.1"] to enable HTTP/2, or omit
 	// to disable it (mitigates CVE-2023-44487 and CVE-2023-39325).

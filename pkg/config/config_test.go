@@ -986,6 +986,7 @@ tls:
 		wantNextProtos   []string
 		wantMinVersion   uint16
 		wantCipherSuites []uint16
+		wantLoadErr      bool
 	}{
 		"HTTP/2 is disabled by default": {
 			configFile:     "",
@@ -1008,16 +1009,21 @@ tls:
 				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 			},
 		},
-		"unrecognized cipher suite is dropped without clobbering other settings": {
-			configFile:     unknownConfig,
-			wantNextProtos: []string{"http/1.1"},
-			wantMinVersion: tls.VersionTLS13,
+		"unrecognized cipher suite fails configuration loading": {
+			configFile:  unknownConfig,
+			wantLoadErr: true,
 		},
 	}
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
 			options, _, err := Load(testScheme, tc.configFile)
+			if tc.wantLoadErr {
+				if err == nil {
+					t.Fatal("Expected load error, got nil")
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
