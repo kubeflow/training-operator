@@ -456,6 +456,9 @@ spec:
     numNodes: 4
     jax: {}
   template:
+    metadata:
+      annotations:
+        alpha.jobset.sigs.k8s.io/exclusive-topology: cloud.google.com/gke-nodepool
     spec:
       replicatedJobs:
         - name: node
@@ -464,8 +467,6 @@ spec:
             metadata:
               labels:
                 trainer.kubeflow.org/trainjob-ancestor-step: trainer
-              annotations:
-                alpha.jobset.sigs.k8s.io/exclusive-topology: cloud.google.com/gke-nodepool
             spec:
               template:
                 spec:
