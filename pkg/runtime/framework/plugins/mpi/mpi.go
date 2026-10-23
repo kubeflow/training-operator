@@ -121,10 +121,11 @@ func (m *MPI) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) er
 		return nil
 	}
 
-	// The TrainJob image runs mpirun on the launcher and the MPI processes on the nodes,
-	// which must ship the same application and MPI versions as the launcher.
-	runtime.SetContainerImageFromTrainer(info.FindContainerByPodSetName(constants.Launcher, constants.Node), trainJob.Spec.Trainer)
-	runtime.SetContainerImageFromTrainer(info.FindContainerByPodSetName(constants.Node, constants.Node), trainJob.Spec.Trainer)
+	// Set the TrainJob image on the launcher and the nodes, since mpirun on the launcher starts
+	// the MPI processes on the nodes, which must ship the same application and MPI versions.
+	for _, psName := range []string{constants.Launcher, constants.Node} {
+		runtime.SetContainerImageFromTrainer(info.FindContainerByPodSetName(psName, constants.Node), trainJob.Spec.Trainer)
+	}
 
 	// TrainJob contains the actual information for the Trainer.
 	if trainJob.Spec.Trainer != nil && trainJob.Spec.Trainer.NumNodes != nil {

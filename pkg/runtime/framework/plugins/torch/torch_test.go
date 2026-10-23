@@ -417,7 +417,7 @@ func TestTorchEnforceMLPolicy(t *testing.T) {
 						Obj(),
 				),
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
-					WithContainers(corev1ac.Container().WithName(constants.Node)),
+					WithContainers(corev1ac.Container().WithName(constants.Node).WithImage("test:runtime")),
 				),
 			),
 			wantInfo: &runtime.Info{

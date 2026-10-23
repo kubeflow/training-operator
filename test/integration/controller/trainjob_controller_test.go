@@ -1332,6 +1332,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 						cIdx := slices.IndexFunc(podSpec.Containers, func(c corev1.Container) bool { return c.Name == constants.Node })
 						g.Expect(cIdx).ShouldNot(gomega.Equal(-1), "node container of %s", rJobName)
 						g.Expect(podSpec.Containers[cIdx].Resources.Claims).Should(gomega.BeComparableTo([]corev1.ResourceClaim{gpuClaim}), "container claims of %s", rJobName)
+						g.Expect(podSpec.Containers[cIdx].Image).Should(gomega.Equal("test:trainjob"))
 					}
 				}, util.Timeout, util.Interval).Should(gomega.Succeed())
 			})
@@ -1384,7 +1385,7 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 									).
 									Obj(),
 							).
-							Container(constants.Node, constants.Node, "test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+							Container(constants.Node, constants.Node, "test:runtime", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 							Obj()).
 					Obj()
 				gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
@@ -1997,7 +1998,7 @@ alpha-node-0-1.alpha slots=8
 									).
 									Obj(),
 							).
-							Container(constants.Node, constants.Node, "test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+							Container(constants.Node, constants.Node, "test:runtime", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 							Obj()).
 					Obj()
 				gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
@@ -2320,7 +2321,7 @@ alpha-node-0-1.alpha slots=8
 									).
 									Obj(),
 							).
-							Container(constants.Node, constants.Node, "test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+							Container(constants.Node, constants.Node, "test:runtime", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 							Obj()).
 					Obj()
 				gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).Should(gomega.Succeed())
@@ -2663,7 +2664,7 @@ alpha-node-0-1.alpha slots=8
 									).
 									Obj(),
 							).
-							Container(constants.Node, constants.Node, "test:trainjob", []string{"trainjob"}, []string{"trainjob"}, resRequests).
+							Container(constants.Node, constants.Node, "test:runtime", []string{"trainjob"}, []string{"trainjob"}, resRequests).
 							Obj(),
 					).
 					Obj()

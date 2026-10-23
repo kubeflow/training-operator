@@ -419,7 +419,7 @@ func TestJAXEnforceMLPolicy(t *testing.T) {
 					"app": "jax-training",
 				}),
 				runtime.WithPodSet(constants.Node, ptr.To(constants.AncestorTrainer), 1, corev1.PodSpec{}, corev1ac.PodSpec().
-					WithContainers(corev1ac.Container().WithName(constants.Node)),
+					WithContainers(corev1ac.Container().WithName(constants.Node).WithImage("test:runtime")),
 				),
 			),
 			trainJob: utiltesting.MakeTrainJobWrapper(metav1.NamespaceDefault, "gpu-job").
