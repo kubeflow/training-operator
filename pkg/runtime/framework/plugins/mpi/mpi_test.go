@@ -98,6 +98,7 @@ func TestMPI(t *testing.T) {
 							Endpoints: func(yield func(string) bool) {
 								yield("trainJob-launcher-0-0.trainJob")
 							},
+							Containers: []runtime.Container{{Name: constants.Node, Image: "test:runtime"}},
 						},
 						{
 							Name:     constants.Node,
@@ -107,6 +108,7 @@ func TestMPI(t *testing.T) {
 								yield("trainJob-node-1-0.trainJob")
 								yield("trainJob-node-1-1.trainJob")
 							},
+							Containers: []runtime.Container{{Name: constants.Node, Image: "test:runtime"}},
 						},
 					},
 				},
@@ -124,6 +126,7 @@ func TestMPI(t *testing.T) {
 				Trainer(
 					utiltesting.MakeTrainJobTrainerWrapper().
 						NumNodes(2).
+						Container("test:trainjob", nil, nil, nil).
 						Obj()).
 				Obj(),
 			wantInfo: &runtime.Info{
@@ -170,6 +173,44 @@ func TestMPI(t *testing.T) {
 							Endpoints: func(yield func(string) bool) {
 								yield("trainJob-launcher-0-0.trainJob")
 							},
+							Containers: []runtime.Container{{
+								Name:  constants.Node,
+								Image: "test:trainjob",
+								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
+									*corev1ac.VolumeMount().
+										WithName(constants.MPISSHAuthVolumeName).
+										WithMountPath("/root/.ssh"),
+									*corev1ac.VolumeMount().
+										WithName(constants.MPIHostfileVolumeName).
+										WithMountPath("/etc/mpi"),
+								},
+								Env: []corev1ac.EnvVarApplyConfiguration{
+									*corev1ac.EnvVar().
+										WithName(constants.OpenMPIEnvHostFileLocation).
+										WithValue(fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)),
+									*corev1ac.EnvVar().
+										WithName(constants.OpenMPIEnvKeepFQDNHostNames).
+										WithValue("true"),
+									*corev1ac.EnvVar().
+										WithName(constants.OpenMPIEnvDefaultSlots).
+										WithValue("1"),
+									*corev1ac.EnvVar().
+										WithName(constants.OpenMPIEnvKeyRSHArgs).
+										WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvHostFileLocation).
+										WithValue(fmt.Sprintf("%s/%s", constants.MPIHostfileDir, constants.MPIHostfileName)),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvKeepFQDNHostNames).
+										WithValue("false"),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvDefaultSlots).
+										WithValue("1"),
+									*corev1ac.EnvVar().
+										WithName(constants.PRTEEnvKeySSHArgs).
+										WithValue(constants.OpenMPIEnvDefaultValueRSHArgs),
+								},
+							}},
 						},
 						{
 							Name:     constants.Node,
@@ -201,6 +242,15 @@ func TestMPI(t *testing.T) {
 								yield("trainJob-node-1-0.trainJob")
 								yield("trainJob-node-1-1.trainJob")
 							},
+							Containers: []runtime.Container{{
+								Name:  constants.Node,
+								Image: "test:trainjob",
+								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
+									*corev1ac.VolumeMount().
+										WithName(constants.MPISSHAuthVolumeName).
+										WithMountPath("/root/.ssh"),
+								},
+							}},
 						},
 					},
 				},
@@ -537,7 +587,8 @@ trainJob-node-1-1.trainJob slots=1
 								yield("trainJob-launcher-0-0.trainJob")
 							},
 							Containers: []runtime.Container{{
-								Name: constants.Node,
+								Name:  constants.Node,
+								Image: "test:runtime",
 							}},
 						},
 						{
@@ -548,7 +599,8 @@ trainJob-node-1-1.trainJob slots=1
 								yield("trainJob-node-1-0.trainJob")
 							},
 							Containers: []runtime.Container{{
-								Name: constants.Node,
+								Name:  constants.Node,
+								Image: "test:runtime",
 							}},
 						},
 					},
@@ -560,6 +612,7 @@ trainJob-node-1-1.trainJob slots=1
 				Trainer(
 					utiltesting.MakeTrainJobTrainerWrapper().
 						NumNodes(10).
+						Container("test:trainjob", nil, nil, nil).
 						Obj()).
 				Obj(),
 			wantInfo: &runtime.Info{
@@ -576,7 +629,8 @@ trainJob-node-1-1.trainJob slots=1
 							Name:  constants.Launcher,
 							Count: ptr.To[int32](1),
 							Containers: []runtime.Container{{
-								Name: constants.Node,
+								Name:  constants.Node,
+								Image: "test:trainjob",
 								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
 									*corev1ac.VolumeMount().
 										WithName(constants.MPISSHAuthVolumeName).
@@ -654,7 +708,8 @@ trainJob-node-1-1.trainJob slots=1
 							Ancestor: ptr.To(constants.AncestorTrainer),
 							Count:    ptr.To[int32](9),
 							Containers: []runtime.Container{{
-								Name: constants.Node,
+								Name:  constants.Node,
+								Image: "test:trainjob",
 								VolumeMounts: []corev1ac.VolumeMountApplyConfiguration{
 									*corev1ac.VolumeMount().
 										WithName(constants.MPISSHAuthVolumeName).

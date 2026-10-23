@@ -204,6 +204,14 @@ func TemplateSpecApply[A any](info *Info) (*A, bool) {
 	return spec, ok
 }
 
+// SetContainerImageFromTrainer sets the container image from the TrainJob trainer image.
+// It is a no-op if the container is nil or the TrainJob trainer image is not set.
+func SetContainerImageFromTrainer(container *Container, jobTrainer *trainer.Trainer) {
+	if container != nil && jobTrainer != nil && jobTrainer.Image != nil {
+		container.Image = *jobTrainer.Image
+	}
+}
+
 // FindContainerByPodSetAncestorContainerName finds runtime.Container from Info.TemplateSpec.PodSet by PodSet Ancestor and Container name.
 func (i *Info) FindContainerByPodSetAncestorContainerName(psAncestor, containerName string) *Container {
 	ps := i.FindPodSetByAncestor(psAncestor)

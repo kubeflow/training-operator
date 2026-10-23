@@ -165,6 +165,7 @@ func (t *Torch) EnforceMLPolicy(info *runtime.Info, trainJob *trainer.TrainJob) 
 	trainerContainer := info.FindContainerByPodSetAncestorContainerName(constants.AncestorTrainer, constants.Node)
 	if trainerContainer != nil && trainJob.Spec.Trainer != nil {
 		apply.UpsertEnvVars(&trainerContainer.Env, apply.EnvVars(trainJob.Spec.Trainer.Env...)...)
+		runtime.SetContainerImageFromTrainer(trainerContainer, trainJob.Spec.Trainer)
 	}
 
 	petEnvs := []corev1ac.EnvVarApplyConfiguration{

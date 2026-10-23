@@ -125,11 +125,9 @@ func (b *Builder) Trainer(info *runtime.Info, trainJob *trainer.TrainJob) *Build
 			// Update values for the Trainer container.
 			for j, container := range rJob.Template.Spec.Template.Spec.Containers {
 				if *container.Name == constants.Node {
-					// Update values from the TrainJob trainer.
+					// Update the command and args from the TrainJob trainer. The image is set on the PodSet
+					// by the MLPolicy plugins in EnforceMLPolicy and synced to the JobSet in Build.
 					if jobTrainer := trainJob.Spec.Trainer; jobTrainer != nil {
-						if image := jobTrainer.Image; image != nil {
-							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Image = image
-						}
 						if command := jobTrainer.Command; command != nil {
 							b.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.Containers[j].Command = command
 						}
