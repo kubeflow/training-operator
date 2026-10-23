@@ -28,6 +28,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	batchv1ac "k8s.io/client-go/applyconfigurations/batch/v1"
 	corev1ac "k8s.io/client-go/applyconfigurations/core/v1"
@@ -505,6 +506,59 @@ func TestJobSet(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
+	nodePatch := func(podSpecPatch trainer.PodSpecPatch) []trainer.RuntimePatch {
+		return []trainer.RuntimePatch{{
+			Manager: "test.io/manager",
+			TrainingRuntimeSpec: &trainer.TrainingRuntimeSpecPatch{
+				Template: &trainer.JobSetTemplatePatch{
+					Spec: &trainer.JobSetSpecPatch{
+						ReplicatedJobs: []trainer.ReplicatedJobPatch{{
+							Name: constants.Node,
+							Template: &trainer.JobTemplatePatch{
+								Spec: &trainer.JobSpecPatch{
+									Template: &trainer.PodTemplatePatch{Spec: &podSpecPatch},
+								},
+							},
+						}},
+					},
+				},
+			},
+		}}
+	}
+	patchContainerWithInitContainerName := nodePatch(trainer.PodSpecPatch{
+		Containers: []trainer.ContainerPatch{{Name: "warmup"}},
+	})
+	patchInitContainerWithContainerName := nodePatch(trainer.PodSpecPatch{
+		InitContainers: []trainer.ContainerPatch{{Name: constants.Node}},
+	})
+	nodeJobWithInitContainer := &runtime.Info{
+		TemplateSpec: runtime.TemplateSpec{
+			DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+				constants.Node: {InitContainers: sets.New("warmup"), Containers: sets.New(constants.Node)},
+			},
+			ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
+				ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
+					{
+						Name: ptr.To(constants.Node),
+						Template: &batchv1ac.JobTemplateSpecApplyConfiguration{
+							Spec: &batchv1ac.JobSpecApplyConfiguration{
+								Template: &corev1ac.PodTemplateSpecApplyConfiguration{
+									Spec: &corev1ac.PodSpecApplyConfiguration{
+										InitContainers: []corev1ac.ContainerApplyConfiguration{
+											{Name: ptr.To("warmup")},
+										},
+										Containers: []corev1ac.ContainerApplyConfiguration{
+											{Name: ptr.To(constants.Node)},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 	cases := map[string]struct {
 		info         *runtime.Info
 		oldObj       *trainer.TrainJob
@@ -907,6 +961,9 @@ func TestValidate(t *testing.T) {
 		"runtimePatches contain invalid replicated job": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -958,6 +1015,9 @@ func TestValidate(t *testing.T) {
 		"runtimePatches contain invalid initContainer": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {InitContainers: sets.New("custom-init")},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1039,6 +1099,9 @@ func TestValidate(t *testing.T) {
 		"runtimePatches contain invalid container": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1117,9 +1180,30 @@ func TestValidate(t *testing.T) {
 					fmt.Sprintf("must not have container that doesn't exist in the runtime job %s", constants.Node)),
 			},
 		},
+		"runtimePatches patch a container with the name of an initContainer": {
+			info: nodeJobWithInitContainer,
+			newObj: utiltesting.MakeTrainJobWrapper("default", "test").
+				RuntimePatches(patchContainerWithInitContainerName).Obj(),
+			wantError: field.ErrorList{
+				field.Invalid(runtimePatchesPath, patchContainerWithInitContainerName,
+					fmt.Sprintf("must not have container that doesn't exist in the runtime job %s", constants.Node)),
+			},
+		},
+		"runtimePatches patch an initContainer with the name of a container": {
+			info: nodeJobWithInitContainer,
+			newObj: utiltesting.MakeTrainJobWrapper("default", "test").
+				RuntimePatches(patchInitContainerWithContainerName).Obj(),
+			wantError: field.ErrorList{
+				field.Invalid(runtimePatchesPath, patchInitContainerWithContainerName,
+					fmt.Sprintf("must not have initContainer that doesn't exist in the runtime job %s", constants.Node)),
+			},
+		},
 		"runtimePatches contain envs for reserved container": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1217,6 +1301,9 @@ func TestValidate(t *testing.T) {
 		"allow runtimePatches when creating a new trainJob": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1270,6 +1357,9 @@ func TestValidate(t *testing.T) {
 		"allow updates to trainJob with no changes to runtimePatches": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1347,6 +1437,9 @@ func TestValidate(t *testing.T) {
 		"forbid changes to runtimePatches when trainJob is not suspended": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1428,6 +1521,9 @@ func TestValidate(t *testing.T) {
 		"allow changes to runtimePatches when trainJob is suspended and jobSet does not exist": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1508,6 +1604,9 @@ func TestValidate(t *testing.T) {
 		"allow atomic update: modify runtimePatches and unsuspend trainJob in a single request": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1588,6 +1687,9 @@ func TestValidate(t *testing.T) {
 		"allow atomic update: modify runtimePatches and suspend trainJob in a single request": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1668,6 +1770,10 @@ func TestValidate(t *testing.T) {
 		"allow changes to runtimePatches when trainJob is suspended and jobSet exists but is inactive": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.DatasetInitializer: {Containers: sets.New(constants.DatasetInitializer)},
+						constants.Node:               {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1781,6 +1887,10 @@ func TestValidate(t *testing.T) {
 		"forbid changes to runtimePatches when trainJob is suspended but jobSet has an active replicatedJob": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.DatasetInitializer: {Containers: sets.New(constants.DatasetInitializer)},
+						constants.Node:               {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1896,6 +2006,9 @@ func TestValidate(t *testing.T) {
 		"forbid atomic update: suspending trainJob with runtimePatches change is rejected when jobSet has an active replicatedJob": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -1991,6 +2104,10 @@ func TestValidate(t *testing.T) {
 		"forbid changes to runtimePatches when trainJob is suspended but has multiple active replicatedJobs": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.DatasetInitializer: {Containers: sets.New(constants.DatasetInitializer)},
+						constants.Node:               {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -2107,6 +2224,9 @@ func TestValidate(t *testing.T) {
 		"forbid changes to runtimePatches when trainJob is suspended but jobSet cannot be checked due to a client error": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{
@@ -2189,6 +2309,9 @@ func TestValidate(t *testing.T) {
 		"dangling container claim via runtimePatches is rejected": {
 			info: &runtime.Info{
 				TemplateSpec: runtime.TemplateSpec{
+					DeclaredPodSets: map[string]runtime.DeclaredPodSet{
+						constants.Node: {Containers: sets.New(constants.Node)},
+					},
 					ObjApply: &jobsetv1alpha2ac.JobSetSpecApplyConfiguration{
 						ReplicatedJobs: []jobsetv1alpha2ac.ReplicatedJobApplyConfiguration{
 							{

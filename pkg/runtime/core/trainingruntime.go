@@ -176,6 +176,10 @@ func (r *TrainingRuntime) newRuntimeInfo(
 			}
 		}
 	}
+	var opts []runtime.InfoOption
+	for _, rJob := range jobSetTemplateSpec.Spec.ReplicatedJobs {
+		opts = append(opts, runtime.WithDeclaredPodSet(rJob.Name, rJob.Template.Spec.Template.Spec))
+	}
 	err := r.mergeRuntimePatches(trainJob, &jobSetTemplateSpec)
 	if err != nil {
 		return nil, err
@@ -192,13 +196,13 @@ func (r *TrainingRuntime) newRuntimeInfo(
 		return nil, err
 	}
 
-	opts := []runtime.InfoOption{
+	opts = append(opts,
 		runtime.WithLabels(propagationLabels),
 		runtime.WithAnnotations(propagationAnnotations),
 		runtime.WithMLPolicySource(mlPolicy),
 		runtime.WithPodGroupPolicy(podGroupPolicy),
 		runtime.WithTemplateSpecObjApply(jobSetSpecApply),
-	}
+	)
 
 	for i, rJob := range jobSetSpecApply.ReplicatedJobs {
 		// TODO: Support multiple replicas ('.template.spec.replicatedJobs[*].replicas') for replicated Jobs.
