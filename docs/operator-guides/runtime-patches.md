@@ -199,7 +199,9 @@ The selected scheduler must be installed and configured in the cluster.
 Changing `schedulerName` selects the scheduler; it does not enable gang scheduling
 or configure a queue. Configure the scheduler's grouping and queue integration separately;
 for example, see the [Volcano guide](job-scheduling/volcano).
-Updates follow the existing [RuntimePatches mutability constraints](#mutability-constraints).
+If the runtime sets `podGroupPolicy`, the patched scheduler must match it; otherwise the
+PodGroup is ignored and gang scheduling is lost.
+`schedulerName` is immutable once set.
 
 ### Custom Service Account and Node Selection
 

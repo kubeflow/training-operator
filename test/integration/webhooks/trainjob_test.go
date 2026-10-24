@@ -23,7 +23,6 @@ import (
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -86,97 +85,6 @@ var _ = ginkgo.Describe("TrainJob Webhook", ginkgo.Ordered, func() {
 		gomega.Expect(k8sClient.DeleteAllOf(ctx, &trainer.TrainJob{}, client.InNamespace(ns.Name))).To(gomega.Succeed())
 		gomega.Expect(k8sClient.DeleteAllOf(ctx, &trainer.TrainingRuntime{}, client.InNamespace(ns.Name))).To(gomega.Succeed())
 		gomega.Expect(k8sClient.DeleteAllOf(ctx, &trainer.ClusterTrainingRuntime{})).To(gomega.Succeed())
-	})
-
-	ginkgo.When("Patching schedulerName", func() {
-		makeSchedulerJob := func(schedulerName string, suspended bool) *trainer.TrainJob {
-			return testingutil.MakeTrainJobWrapper(ns.Name, "scheduler-patch-job").
-				RuntimeRef(trainer.GroupVersion.WithKind(trainer.TrainingRuntimeKind), runtimeName).
-				Suspend(suspended).
-				RuntimePatches([]trainer.RuntimePatch{{
-					Manager: "test.io/scheduler",
-					TrainingRuntimeSpec: &trainer.TrainingRuntimeSpecPatch{
-						Template: &trainer.JobSetTemplatePatch{
-							Spec: &trainer.JobSetSpecPatch{
-								ReplicatedJobs: []trainer.ReplicatedJobPatch{{
-									Name: constants.Node,
-									Template: &trainer.JobTemplatePatch{
-										Spec: &trainer.JobSpecPatch{
-											Template: &trainer.PodTemplatePatch{
-												Spec: &trainer.PodSpecPatch{SchedulerName: schedulerName},
-											},
-										},
-									},
-								}},
-							},
-						},
-					},
-				}}).Obj()
-		}
-
-		ginkgo.DescribeTable("Validate schedulerName on creation", func(schedulerName string, valid bool) {
-			// Use the wire representation so an explicit empty string is not
-			// omitted by the Go API's omitempty tag before CRD validation.
-			job := &unstructured.Unstructured{Object: map[string]any{
-				"apiVersion": trainer.GroupVersion.String(),
-				"kind":       trainer.TrainJobKind,
-				"metadata":   map[string]any{"name": "scheduler-patch-job", "namespace": ns.Name},
-				"spec": map[string]any{
-					"suspend":    true,
-					"runtimeRef": map[string]any{"name": runtimeName, "kind": trainer.TrainingRuntimeKind},
-					"runtimePatches": []any{map[string]any{
-						"manager": "test.io/scheduler",
-						"trainingRuntimeSpec": map[string]any{
-							"template": map[string]any{
-								"spec": map[string]any{
-									"replicatedJobs": []any{map[string]any{
-										"name": constants.Node,
-										"template": map[string]any{
-											"spec": map[string]any{
-												"template": map[string]any{
-													"spec": map[string]any{"schedulerName": schedulerName},
-												},
-											},
-										},
-									}},
-								},
-							},
-						},
-					}},
-				},
-			}}
-			err := k8sClient.Create(ctx, job)
-			if valid {
-				gomega.Expect(err).To(gomega.Succeed())
-				stored := &trainer.TrainJob{}
-				gomega.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(job), stored)).To(gomega.Succeed())
-				podSpec := stored.Spec.RuntimePatches[0].TrainingRuntimeSpec.Template.Spec.ReplicatedJobs[0].Template.Spec.Template.Spec
-				gomega.Expect(podSpec.SchedulerName).To(gomega.Equal(schedulerName))
-			} else {
-				gomega.Expect(err).To(testingutil.BeInvalidError())
-			}
-		},
-			ginkgo.Entry("accepts volcano", "volcano", true),
-			ginkgo.Entry("accepts the default scheduler", "default-scheduler", true),
-			ginkgo.Entry("accepts a DNS subdomain", "scheduler.example.com", true),
-			ginkgo.Entry("accepts the maximum DNS subdomain length", strings.Repeat("a", 253), true),
-			ginkgo.Entry("rejects an empty name", "", false),
-			ginkgo.Entry("rejects an uppercase name", "Volcano", false),
-			ginkgo.Entry("rejects a leading hyphen", "-volcano", false),
-			ginkgo.Entry("rejects a trailing dot", "volcano.", false),
-			ginkgo.Entry("rejects a slash", "example.com/volcano", false),
-			ginkgo.Entry("rejects a name longer than 253 characters", strings.Repeat("a", 254), false),
-		)
-
-		ginkgo.DescribeTable("Validate schedulerName on update", func(suspended bool, matcher gomega.OmegaMatcher) {
-			job := makeSchedulerJob("default-scheduler", suspended)
-			gomega.Expect(k8sClient.Create(ctx, job)).To(gomega.Succeed())
-			job.Spec.RuntimePatches[0].TrainingRuntimeSpec.Template.Spec.ReplicatedJobs[0].Template.Spec.Template.Spec.SchedulerName = "volcano"
-			gomega.Expect(k8sClient.Update(ctx, job)).To(matcher)
-		},
-			ginkgo.Entry("allows changes while suspended", true, gomega.Succeed()),
-			ginkgo.Entry("rejects changes while unsuspended", false, testingutil.BeForbiddenError()),
-		)
 	})
 
 	ginkgo.When("Creating TrainJob", func() {

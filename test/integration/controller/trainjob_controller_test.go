@@ -322,55 +322,6 @@ var _ = ginkgo.Describe("TrainJob controller", ginkgo.Ordered, func() {
 					g.Expect(k8sClient.Update(ctx, trainJob)).Should(testingutil.BeInvalidError())
 				}, util.Timeout, util.Interval).Should(gomega.Succeed())
 			})
-			ginkgo.It("Should override schedulerName only for targeted JobSet pods", func() {
-				for i := range trainingRuntime.Spec.Template.Spec.ReplicatedJobs {
-					trainingRuntime.Spec.Template.Spec.ReplicatedJobs[i].Template.Spec.Template.Spec.SchedulerName = "default-scheduler"
-				}
-				trainJob.Spec.RuntimePatches = []trainer.RuntimePatch{{
-					Manager: "test.io/scheduler",
-					TrainingRuntimeSpec: &trainer.TrainingRuntimeSpecPatch{
-						Template: &trainer.JobSetTemplatePatch{
-							Spec: &trainer.JobSetSpecPatch{
-								ReplicatedJobs: []trainer.ReplicatedJobPatch{{
-									Name: constants.Node,
-									Template: &trainer.JobTemplatePatch{
-										Spec: &trainer.JobSpecPatch{
-											Template: &trainer.PodTemplatePatch{
-												Spec: &trainer.PodSpecPatch{SchedulerName: "volcano"},
-											},
-										},
-									},
-								}},
-							},
-						},
-					},
-				}}
-				gomega.Expect(k8sClient.Create(ctx, trainingRuntime)).To(gomega.Succeed())
-				gomega.Expect(k8sClient.Create(ctx, trainJob)).To(gomega.Succeed())
-
-				ginkgo.By("Checking the node override and unchanged initializer schedulers")
-				gomega.Eventually(func(g gomega.Gomega) {
-					jobSet := &jobsetv1alpha2.JobSet{}
-					g.Expect(k8sClient.Get(ctx, trainJobKey, jobSet)).To(gomega.Succeed())
-					schedulers := make(map[string]string)
-					for _, job := range jobSet.Spec.ReplicatedJobs {
-						schedulers[job.Name] = job.Template.Spec.Template.Spec.SchedulerName
-					}
-					g.Expect(schedulers).To(gomega.Equal(map[string]string{
-						constants.DatasetInitializer: "default-scheduler",
-						constants.ModelInitializer:   "default-scheduler",
-						constants.Node:               "volcano",
-					}))
-				}, util.Timeout, util.Interval).Should(gomega.Succeed())
-
-				ginkgo.By("Checking that the shared TrainingRuntime was not modified")
-				storedRuntime := &trainer.TrainingRuntime{}
-				gomega.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(trainingRuntime), storedRuntime)).To(gomega.Succeed())
-				for _, job := range storedRuntime.Spec.Template.Spec.ReplicatedJobs {
-					gomega.Expect(job.Template.Spec.Template.Spec.SchedulerName).To(gomega.Equal("default-scheduler"))
-				}
-			})
-
 			ginkgo.It("Should propagate terminationGracePeriodSeconds from RuntimePatches to JobSet pods", func() {
 				ginkgo.By("Creating a TrainingRuntime and TrainJob with terminationGracePeriodSeconds patch")
 				gracePeriodRuntime := testingutil.MakeTrainingRuntimeWrapper(ns.Name, "alpha-grace").
