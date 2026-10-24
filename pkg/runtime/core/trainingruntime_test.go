@@ -348,6 +348,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 							WithNumNodes(100).
 							Obj(),
 					).
+					SchedulerName(constants.DatasetInitializer, "default-scheduler").
 					InitContainer(constants.DatasetInitializer, "override-init-container", "test:runtime",
 						[]corev1.EnvVar{
 							{
@@ -511,6 +512,7 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 												Spec: &trainer.JobSpecPatch{
 													Template: &trainer.PodTemplatePatch{
 														Spec: &trainer.PodSpecPatch{
+															SchedulerName:      "volcano",
 															ServiceAccountName: ptr.To("override-sa"),
 															InitContainers: []trainer.ContainerPatch{
 																{
@@ -616,6 +618,8 @@ func TestTrainingRuntimeNewObjects(t *testing.T) {
 			wantObjs: []runtime.Object{
 				testingutil.MakeJobSetWrapper(metav1.NamespaceDefault, "test-job").
 					ControllerReference(trainer.SchemeGroupVersion.WithKind(trainer.TrainJobKind), "test-job", "uid").
+					SchedulerName(constants.DatasetInitializer, "default-scheduler").
+					SchedulerName(constants.Node, "volcano").
 					ServiceAccountName(constants.Node, "override-sa").
 					Replicas(1, constants.DatasetInitializer, constants.ModelInitializer, constants.Node).
 					Parallelism(1, constants.DatasetInitializer, constants.ModelInitializer).
